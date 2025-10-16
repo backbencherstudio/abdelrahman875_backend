@@ -1,0 +1,843 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  type                String?
+  provider            String?
+  provider_account_id String?
+  refresh_token       String?
+  access_token        String?
+  expires_at          DateTime?
+  token_type          String?
+  scope               String?
+  id_token            String?
+  session_state       String?
+
+  @@unique([provider, provider_account_id])
+  @@map("accounts")
+}
+
+model User {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  approved_at  DateTime?
+  availability String?
+
+  email      String? @unique
+  username   String? @unique
+  name       String? @db.VarChar(255)
+  first_name String? @db.VarChar(255)
+  last_name  String? @db.VarChar(255)
+  password   String? @db.VarChar(255)
+  domain     String? @unique
+  avatar     String?
+
+  phone_number  String?
+  country       String?
+  state         String?
+  city          String?
+  address       String?
+  zip_code      String?
+  gender        String?
+  date_of_birth DateTime? @db.Date
+
+  // billing id. e.g. stripe customer id
+  billing_id String?
+
+  type              String?   @default("user")
+  email_verified_at DateTime?
+
+  is_two_factor_enabled Int?    @default(0)
+  two_factor_secret     String? // secret key for two factor authentication
+
+  accounts                  Account[]
+  creator_conversations     Conversation[] @relation("creator")
+  participant_conversations Conversation[] @relation("participant")
+  receiver_messages         Message[]      @relation("receiver")
+  sender_messages           Message[]      @relation("sender")
+  receiver_notifications    Notification[] @relation("receiver")
+  sender_notifications      Notification[] @relation("sender")
+
+  user_payment_methods UserPaymentMethod[]
+  user_settings        UserSetting[]
+  ucodes               Ucode[]
+  roles                Role[]
+  role_users           RoleUser[]
+  payment_transactions PaymentTransaction[]
+
+  // === ADD ONLY THESE NEW RELATIONS ===
+  profile             UserProfile?
+  documents           Document[]
+  vehicles            Vehicle[]
+  shipper_missions    Mission[]           @relation("ShipperMissions")
+  carrier_missions    Mission[]           @relation("CarrierMissions")
+  sent_reviews        MissionReview[]     @relation("SentReviews")
+  received_reviews    MissionReview[]     @relation("ReceivedReviews")
+  shipper_payments    Payment[]           @relation("ShipperPayments")
+  carrier_payments    Payment[]           @relation("CarrierPayments")
+  carrier_acceptances MissionAcceptance[] @relation("CarrierAcceptances")
+
+  // === ADD THESE FIELDS FOR APPROVAL FLOW ===
+  application_status           UserApplicationStatus @default(PENDING)
+  application_submitted_at     DateTime?
+  application_rejected_at      DateTime?
+  application_rejection_reason String?
+
+  // Business-specific fields for ratings
+  average_rating     Float? @default(0.0)
+  total_reviews      Int?   @default(0)
+  completed_missions Int?   @default(0)
+
+  // Promo code relations
+  user_promo_codes   UserPromoCode[]
+  promo_code_usages  PromoCodeUsage[]
+
+  @@map("users")
+}
+
+enum UserApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Ucode {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  status     Int?     @default(1) @db.SmallInt
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  token      String?
+  email      String?
+  expired_at DateTime?
+
+  @@map("ucodes")
+}
+
+model Role {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int?    @default(1) @db.SmallInt
+  title  String?
+  name   String?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  permission_roles PermissionRole[]
+  role_users       RoleUser[]
+  permissions      Permission[]     @relation("PermissionToRole")
+
+  @@map("roles")
+}
+
+model Permission {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status     Int?    @default(1) @db.SmallInt
+  title      String?
+  action     String?
+  subject    String?
+  conditions String?
+  fields     String?
+
+  permission_roles PermissionRole[]
+  roles            Role[]           @relation("PermissionToRole")
+
+  @@map("permissions")
+}
+
+model PermissionRole {
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  permission_id String
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  role_id String
+  role    Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([permission_id, role_id])
+  @@map("permission_roles")
+}
+
+model RoleUser {
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  role_id String
+  role    Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, user_id])
+  @@map("role_users")
+}
+
+// this table stores notification event
+model NotificationEvent {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int?    @default(1) @db.SmallInt
+  type   String?
+  text   String?
+
+  notifications Notification[]
+
+  @@map("notification_events")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  read_at DateTime?
+
+  status Int? @default(1) @db.SmallInt
+
+  sender_id String?
+  sender    User?   @relation("sender", fields: [sender_id], references: [id])
+
+  receiver_id String?
+  receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
+
+  notification_event_id String?
+  notification_event    NotificationEvent? @relation(fields: [notification_event_id], references: [id])
+
+  entity_id String?
+
+  @@map("notifications")
+}
+
+model UserPaymentMethod {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  payment_method_id String?
+  checkout_id       String?
+
+  @@map("user_payment_methods")
+}
+
+model PaymentTransaction {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  store_id String?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  order_id         String?
+  type             String?  @default("order")
+  withdraw_via     String?  @default("wallet")
+  provider         String?
+  reference_number String?
+  status           String?  @default("pending")
+  raw_status       String?
+  amount           Decimal?
+  currency         String?
+  paid_amount      Decimal?
+  paid_currency    String?
+
+  @@map("payment_transactions")
+}
+
+// ---------Start Chat schema---------
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+}
+
+// message is used for conversation
+model Message {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status MessageStatus? @default(PENDING)
+
+  sender_id String?
+  sender    User?   @relation("sender", fields: [sender_id], references: [id])
+
+  receiver_id String?
+  receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
+
+  conversation_id String?
+  conversation    Conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  attachment_id String?
+  attachment    Attachment? @relation(fields: [attachment_id], references: [id])
+
+  message String?
+
+  @@map("messages")
+}
+
+// this table stores attachment of message
+model Attachment {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  name     String?
+  type     String?
+  size     Int?
+  file     String?
+  file_alt String?
+
+  messages Message[]
+
+  @@map("attachments")
+}
+
+// this table stores conversation
+model Conversation {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  creator_id String?
+  creator    User?   @relation("creator", fields: [creator_id], references: [id])
+
+  participant_id String?
+  participant    User?   @relation("participant", fields: [participant_id], references: [id])
+
+  messages Message[]
+
+  @@map("conversations")
+}
+
+// ---------End Chat schema---------
+
+model Faq {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status     Int?    @default(1) @db.SmallInt
+  sort_order Int?    @default(0)
+  question   String?
+  answer     String?
+
+  @@map("faqs")
+}
+
+model Contact {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  first_name   String?
+  last_name    String?
+  email        String?
+  phone_number String?
+  message      String?
+
+  @@map("contacts")
+}
+
+model SocialMedia {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status     Int?    @default(1) @db.SmallInt
+  sort_order Int?    @default(0)
+  name       String?
+  url        String?
+  icon       String?
+
+  @@map("social_medias")
+}
+
+model WebsiteInfo {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  name                String?
+  phone_number        String?
+  email               String?
+  address             String?
+  logo                String?
+  favicon             String?
+  copyright           String?
+  cancellation_policy String?
+
+  @@map("website_infos")
+}
+
+model Setting {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  category      String?
+  label         String?
+  description   String?
+  key           String? @unique
+  default_value String?
+
+  user_settings UserSetting[]
+
+  @@map("settings")
+}
+
+model UserSetting {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  setting_id String?
+  setting    Setting? @relation(fields: [setting_id], references: [id])
+
+  value String?
+
+  @@map("user_settings")
+}
+
+// ===== DELIVERAPP SPECIFIC MODELS =====
+
+model UserProfile {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  // Business Information
+  company_name   String?
+  company_number String? // SIRET in France
+  vat_number     String? // TVA intracommunautaire
+  legal_form     String? // SARL, SAS, Auto-entrepreneur, etc.
+
+  // Professional Information
+  description      String?
+  years_experience Int?
+
+  // Relations
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  type             DocumentType
+  file_url         String
+  file_name        String?
+  file_size        Int?
+  status           DocumentStatus @default(PENDING)
+  reviewed_at      DateTime?
+  rejection_reason String?
+  expires_at       DateTime? // For documents with expiration
+
+  // Relations
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, type])
+  @@map("documents")
+}
+
+model Vehicle {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  type          VehicleType
+  make          String?
+  model         String?
+  year          Int?
+  license_plate String      @unique
+  color         String?
+  capacity_kg   Float? // Weight capacity in kg
+  capacity_m3   Float? // Volume capacity in m³
+  photos        String[] // Array of photo URLs
+
+  // Relations
+  carrier_id String
+  carrier    User   @relation(fields: [carrier_id], references: [id], onDelete: Cascade)
+
+  @@map("vehicles")
+}
+
+model Mission {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  shipment_type ShipmentType?
+
+  // Pickup Information
+  pickup_lat           Float?
+  pickup_lng           Float?
+  pickup_address       String
+  pickup_city          String
+  pickup_postal_code   String
+  pickup_contact_phone String
+  pickup_date          DateTime
+  pickup_time          String
+  pickup_instructions  String?
+  pickup_contact_name  String
+
+  // Goods Information
+  goods_type           String
+  temperature_required TemperatureRange? // Predefined temperature range
+  // Package Dimensions
+  package_length       Float? // meters
+  package_width        Float? // meters
+  package_height       Float?
+  volume_m3            Float
+  weight_kg            Float
+
+  // Delivery Information
+  delivery_lat           Float?
+  delivery_lng           Float?
+  delivery_address       String
+  delivery_city          String
+  delivery_postal_code   String
+  delivery_contact_phone String
+  delivery_contact_name  String
+  delivery_date          DateTime? // Separate delivery date
+  delivery_time          String?
+  delivery_message       String? // righ bell before entering
+  delivery_instructions String? //doesn't throw away this package
+
+
+  parcels_count Int?
+
+  special_instructions String?
+  fragile              Boolean? @default(false)
+
+  // Timing
+
+  time_slot          String? // "09:00-12:00", "14:00-18:00" - Optional, using pickup_time/delivery_time instead
+  estimated_duration Int? // in minutes
+
+  // Pricing
+  distance_km       Float
+  base_price        Float
+  final_price       Float
+  commission_rate   Float  @default(0.10)
+  commission_amount Float?
+  vat_rate          Float?  @default(0.20)
+  vat_amount        Float?
+
+  // Proof of Delivery
+  pickup_photo        String?
+  pickup_signature    String? // signature of the person who picks up
+  delivery_photo      String?
+  carrier_signature  String? // signature of the carrier
+  recipient_signature String? // signature of the person who receives
+  loading_notes      String?
+  delivery_notes      String?
+
+  // Status
+  status MissionStatus @default(CREATED)
+
+  // Document URLs
+  cmr_document_url          String?
+  confirmation_document_url String?
+  invoice_document_url      String?
+
+  // Relations
+  shipper_id String
+  shipper    User    @relation("ShipperMissions", fields: [shipper_id], references: [id])
+  carrier_id String?
+  carrier    User?   @relation("CarrierMissions", fields: [carrier_id], references: [id])
+
+  // Tracking
+  tracking_points     TrackingPoint[]
+  mission_reviews     MissionReview[]
+  payment             Payment?
+  carrier_acceptances MissionAcceptance[] @relation("MissionAcceptances")
+  promo_code_usages   PromoCodeUsage[]
+
+  @@map("missions")
+}
+
+model MissionAcceptance {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  status  String  @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  message String? // Optional message from carrier
+
+  // Relations
+  mission_id String
+  mission    Mission @relation("MissionAcceptances", fields: [mission_id], references: [id], onDelete: Cascade)
+  carrier_id String
+  carrier    User    @relation("CarrierAcceptances", fields: [carrier_id], references: [id], onDelete: Cascade)
+
+  @@unique([mission_id, carrier_id])
+  @@map("mission_acceptances")
+}
+
+model TrackingPoint {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  speed     Float?
+  heading   Float?
+
+  mission_id String
+  mission    Mission @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+
+  @@map("tracking_points")
+}
+
+model MissionReview {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  rating  Int // 1-5
+  comment String?
+
+  // Relations
+  author_id  String
+  author     User    @relation("SentReviews", fields: [author_id], references: [id])
+  target_id  String
+  target     User    @relation("ReceivedReviews", fields: [target_id], references: [id])
+  mission_id String
+  mission    Mission @relation(fields: [mission_id], references: [id])
+
+  @@unique([author_id, mission_id])
+  @@map("mission_reviews")
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  amount            Float
+  currency          String        @default("EUR")
+  status            PaymentStatus @default(PENDING)
+  provider          String? // stripe, etc.
+  provider_id       String? // payment intent id
+  commission_rate   Float         @default(0.10)
+  commission_amount Float?
+  payout_date       DateTime? // When carrier gets paid
+
+  // Relations
+  mission_id String  @unique
+  mission    Mission @relation(fields: [mission_id], references: [id])
+  shipper_id String
+  shipper    User    @relation("ShipperPayments", fields: [shipper_id], references: [id])
+  carrier_id String?
+  carrier    User?   @relation("CarrierPayments", fields: [carrier_id], references: [id])
+
+  @@map("payments")
+}
+
+// ===== ENUMS =====
+
+enum DocumentType {
+  ID_CARD
+  KBIS
+  INSURANCE_CERTIFICATE
+  RIB
+  DRIVING_LICENSE
+  PROFILE_PHOTO
+  URSSAF_CERTIFICATE
+  TRANSPORT_LICENSE
+  SEPA_MANDATE
+  PROFESSIONAL_LIABILITY_INSURANCE
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum VehicleType {
+  CAR
+  TRUCK
+  VAN
+  MOTORBIKE
+  BICYCLE
+}
+
+enum MissionStatus {
+  CREATED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  SEARCHING_CARRIER
+  ACCEPTED
+  PICKUP_CONFIRMED
+  IN_TRANSIT
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+enum ShipmentType {
+  FREIGHT
+  EXPRESS
+  URGENT
+  STANDARD
+  ECONOMY
+  PREMIUM
+}
+
+enum TemperatureRange {
+  FROZEN        // -18°C to 0°C
+  REFRIGERATED  // +0°C to +7°C
+  AMBIENT       // +15°C to +25°C
+  CONTROLLED    // +2°C to +8°C
+  OTHER         // Custom temperature requirement
+}
+
+model PromoCode {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  code            String      @unique
+  description     String?
+  discount_type   DiscountType
+  discount_value  Float       // Percentage (0-100) or fixed amount
+  min_order_amount Float?     // Minimum order amount to use this code
+  max_discount    Float?      // Maximum discount amount (for percentage)
+  usage_limit     Int?        // Total usage limit (null = unlimited)
+  used_count      Int         @default(0)
+  user_limit      Int?        // Usage limit per user (null = unlimited)
+  
+  valid_from      DateTime
+  valid_until     DateTime
+  is_active       Boolean     @default(true)
+  
+  // Relations
+  user_restrictions UserPromoCode[] // Users who can use this code
+  usages           PromoCodeUsage[] // Usage history
+
+  @@map("promo_codes")
+}
+
+model UserPromoCode {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  promo_code_id String
+  promo_code    PromoCode @relation(fields: [promo_code_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, promo_code_id])
+  @@map("user_promo_codes")
+}
+
+model PromoCodeUsage {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+
+  promo_code_id String
+  promo_code    PromoCode @relation(fields: [promo_code_id], references: [id], onDelete: Cascade)
+  user_id       String
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  mission_id    String?
+  mission       Mission? @relation(fields: [mission_id], references: [id], onDelete: SetNull)
+  
+  discount_amount Float
+  order_amount    Float
+
+  @@map("promo_code_usages")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+// this table stores example
+// model Note {
+//   id                String  @id @default(cuid())
+//   created_at DateTime  @default(now())
+//   updated_at DateTime  @default(now())
+//   deleted_at DateTime?
+//   status     Int?      @default(1) @db.SmallInt
+
+//   title String?
+//   body  String? @db.Text
+
+//   tenant_id Int?
+//   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+//   @@map("posts")
+// }
