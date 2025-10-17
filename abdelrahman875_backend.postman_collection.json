@@ -1,0 +1,2514 @@
+{
+	"info": {
+		"_postman_id": "40346e27-f436-4553-b8dc-9ab88db30b8b",
+		"name": "abdelrahman875_backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49199258",
+		"_collection_link": "https://fahim-devx-6698780.postman.co/workspace/Abdullah-Al-Fahim's-Workspace~dfc80619-5324-4d62-8165-8d875e5a27c6/collection/49199258-40346e27-f436-4553-b8dc-9ab88db30b8b?action=share&source=collection_link&creator=49199258"
+	},
+	"item": [
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "auth",
+					"item": [
+						{
+							"name": "register",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"first_name\": \"Shipper\",\r\n  \"last_name\": \"Mia\", \r\n  \"email\": \"shipper@gmail.com\",\r\n  \"password\": \"password123\",\r\n  \"type\": \"shipper\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/auth/register",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "verify-email",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"shipper@gmail.com\",\r\n    \"token\": \"321430\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/auth/verify-email",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"verify-email"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "login",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Parse the response JSON\r",
+											"let jsonData;\r",
+											"\r",
+											"try {\r",
+											"    jsonData = pm.response.json();\r",
+											"} catch (e) {\r",
+											"    console.error(\"Response is not valid JSON:\", e);\r",
+											"}\r",
+											"\r",
+											"// Check and save tokens to environment\r",
+											"if (jsonData && jsonData.success && jsonData.authorization) {\r",
+											"    const accessToken = jsonData.authorization.access_token;\r",
+											"\r",
+											"    if (accessToken && jsonData.type === \"admin\") {\r",
+											"        pm.collectionVariables.set(\"admin_token\", `Bearer ${accessToken}`);\r",
+											"    } else if (accessToken && jsonData.type === \"shipper\") {\r",
+											"        pm.collectionVariables.set(\"shipper_token\", `Bearer ${accessToken}`);\r",
+											"    } else {\r",
+											"        pm.collectionVariables.set(\"carrier_token\", `Bearer ${accessToken}`);\r",
+											"    }\r",
+											"\r",
+											"    pm.test(\"Access token exists\", function () {\r",
+											"        pm.expect(accessToken).to.not.be.undefined;\r",
+											"    });\r",
+											"\r",
+											"} else {\r",
+											"    console.warn(\"⚠️ No authorization tokens found in response.\");\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"carrier@gmail.com\",\r\n    \"password\": \"password123\"\r\n\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    // \"email\": \"carrier@gmail.com\",\r\n    // \"password\": \"password123\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/auth/login",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "resend-verification-mail",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"fahim.devx@gmail.com\",\r\n    \"token\": \"433175\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/auth/verify-email",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"auth",
+										"verify-email"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "forget password",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"admin@mail.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/auth/forgot-password",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"forgot-password"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "reset password",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"nirobhossainalip@gmail.com\",\r\n    \"token\":\"433175\",\r\n    \"password\":\"12345678\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/auth/reset-password",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"auth",
+										"reset-password"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImNoaW5pQGdtYWlsLmNvbSIsInN1YiI6ImNtZmpodXVqdzAwMGJ3c3YwbnQ1aTM3dm8iLCJpYXQiOjE3NTc5MzA4NTcsImV4cCI6MTc1ODAxNzI1N30.KQLJvrjiOFogJfCNVVbXV7E3dhRRTd7g9zquCeNjFa0",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "image",
+											"type": "file",
+											"src": "/C:/Users/bdCalling/Pictures/avater.png"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/auth/update",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"update"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "documents",
+					"item": [
+						{
+							"name": "search-by-document-status",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN2UzbXptMDAwNWloem91dXFzODlkZyIsImlhdCI6MTc1OTI4NzM0MiwiZXhwIjoxNzU5MjkwOTQyfQ.z4pm7XMD38q-CeU6fMoEzZx23ZFVKpj4fvxinp0xIo4",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"john.doe2@example.com\",\r\n    \"password\": \"password123\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/documents/by-status?status=PENDING",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"by-status"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "PENDING"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "review-single-documents",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN2UzbXptMDAwNWloem91dXFzODlkZyIsImlhdCI6MTc1OTI4NzM0MiwiZXhwIjoxNzU5MjkwOTQyfQ.z4pm7XMD38q-CeU6fMoEzZx23ZFVKpj4fvxinp0xIo4",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"status\": \"APPROVED\",\r\n    \"rejection_reason\": \"this liscense already expired\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/documents/review/cmg6f3v72000pihvof62ca39y",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"review",
+										"cmg6f3v72000pihvof62ca39y"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "approve-user",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN2UzbXptMDAwNWloem91dXFzODlkZyIsImlhdCI6MTc1OTI4NzM0MiwiZXhwIjoxNzU5MjkwOTQyfQ.z4pm7XMD38q-CeU6fMoEzZx23ZFVKpj4fvxinp0xIo4",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user/cmg6f3ujv000bihvog0xu2nh9/approve",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user",
+										"cmg6f3ujv000bihvog0xu2nh9",
+										"approve"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "reject-user",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN2UzbXptMDAwNWloem91dXFzODlkZyIsImlhdCI6MTc1OTI4NzM0MiwiZXhwIjoxNzU5MjkwOTQyfQ.z4pm7XMD38q-CeU6fMoEzZx23ZFVKpj4fvxinp0xIo4",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user/cmg7e2r300000ihzorx4czg8j/reject",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user",
+										"cmg7e2r300000ihzorx4czg8j",
+										"reject"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "user-management",
+					"item": [
+						{
+							"name": "filtering",
+							"item": [
+								{
+									"name": "filter-blocked-carriers",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{endpoint2}}/api/admin/user-management/carriers?status=blocked",
+											"host": [
+												"{{endpoint2}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"user-management",
+												"carriers"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "blocked"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "filter-active-carriers",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{endpoint2}}/api/admin/user-management/carriers?status=active",
+											"host": [
+												"{{endpoint2}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"user-management",
+												"carriers"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "active"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "filter-blocked-shippers",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{endpoint2}}/api/admin/user-management/shippers?status=blocked",
+											"host": [
+												"{{endpoint2}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"user-management",
+												"shippers"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "blocked"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "filter-blocked-shippers Copy",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{endpoint2}}/api/admin/user-management/shippers?status=active",
+											"host": [
+												"{{endpoint2}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"user-management",
+												"shippers"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "active"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "block-user",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user-management/cmgc2jb2h0000ihnsr3z85m04/block",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user-management",
+										"cmgc2jb2h0000ihnsr3z85m04",
+										"block"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "unblock-user",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{access_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user-management/cmgu846j3000buo48yihxtf05/unblock",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user-management",
+										"cmgu846j3000buo48yihxtf05",
+										"unblock"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-all-carriers",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user-management/carriers",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user-management",
+										"carriers"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-all-shippers",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{admin_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user-management/shippers",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user-management",
+										"shippers"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update users application status",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{admin_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/user/cmgubqz48000huosodprarvuu/approve",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"user",
+										"cmgubqz48000huosodprarvuu",
+										"approve"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "promo-code",
+					"item": [
+						{
+							"name": "user-specific-promocode",
+							"item": [
+								{
+									"name": "assign-code-to-user",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"code\": \"SAVE20\",\r\n  \"description\": \"20% off on first order\",\r\n  \"discount_type\": \"PERCENTAGE\",\r\n  \"discount_value\": 20,\r\n  \"min_order_amount\": 50,\r\n  \"max_discount\": 100,\r\n  \"usage_limit\": 100,\r\n  \"user_limit\": 1,\r\n  \"valid_from\": \"2024-01-01T00:00:00Z\",\r\n  \"valid_until\": \"2024-12-31T23:59:59Z\",\r\n  \"is_active\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{endpoint2}}/api/admin/promocodes/id/assign",
+											"host": [
+												"{{endpoint2}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"promocodes",
+												"id",
+												"assign"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "remove-code-from-users",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+													"type": "string"
+												}
+											]
+										},
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"code\": \"SAVE20\",\r\n  \"description\": \"20% off on first order\",\r\n  \"discount_type\": \"PERCENTAGE\",\r\n  \"discount_value\": 20,\r\n  \"min_order_amount\": 50,\r\n  \"max_discount\": 100,\r\n  \"usage_limit\": 100,\r\n  \"user_limit\": 1,\r\n  \"valid_from\": \"2024-01-01T00:00:00Z\",\r\n  \"valid_until\": \"2024-12-31T23:59:59Z\",\r\n  \"is_active\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{endpoint2}}/api/admin/promocodes",
+											"host": [
+												"{{endpoint2}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"promocodes"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "create-promo-code",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"code\": \"SAVE20\",\r\n  \"description\": \"20% off on first order\",\r\n  \"discount_type\": \"PERCENTAGE\",\r\n  \"discount_value\": 20,\r\n  \"min_order_amount\": 50,\r\n  \"max_discount\": 100,\r\n  \"usage_limit\": 100,\r\n  \"user_limit\": 1,\r\n  \"valid_from\": \"2024-01-01T00:00:00Z\",\r\n  \"valid_until\": \"2024-12-31T23:59:59Z\",\r\n  \"is_active\": true\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/promocodes",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"promocodes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-all-promocodes",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/promocodes",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"promocodes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-promocodes-by-id",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/promocodes/cmgc4s73w0000ihkcpdnypuo3",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"promocodes",
+										"cmgc4s73w0000ihkcpdnypuo3"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-promocode",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"is_active\": false\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/promocodes/cmgc4s73w0000ihkcpdnypuo3",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"promocodes",
+										"cmgc4s73w0000ihkcpdnypuo3"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-promocode",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"is_active\": false\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/promocodes/cmgc4s73w0000ihkcpdnypuo3",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"promocodes",
+										"cmgc4s73w0000ihkcpdnypuo3"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "toogle-active-status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/admin/promocodes/cmgc4s73w0000ihkcpdnypuo3/toggle-active",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"promocodes",
+										"cmgc4s73w0000ihkcpdnypuo3",
+										"toggle-active"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "New Folder",
+					"item": []
+				}
+			]
+		},
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "register-shipper",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "first_name",
+									"value": "Shipper",
+									"type": "text"
+								},
+								{
+									"key": "last_name",
+									"value": "Mia",
+									"type": "text"
+								},
+								{
+									"key": "date_of_birth",
+									"value": "1990-01-15",
+									"type": "text"
+								},
+								{
+									"key": "company_name",
+									"value": "Doe Logistics Ltd",
+									"type": "text"
+								},
+								{
+									"key": "sector",
+									"value": "E-commerce",
+									"type": "text"
+								},
+								{
+									"key": "phone_number",
+									"value": "+33712345678",
+									"type": "text"
+								},
+								{
+									"key": "country",
+									"value": "\tFrance",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": "123 Business Street, Paris, France",
+									"type": "text"
+								},
+								{
+									"key": "associated_users",
+									"value": "5",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "shipper@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "password123",
+									"type": "text"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/register-shipper-complete",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register-shipper-complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "register-carrier",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "first_name",
+									"value": "Carrier",
+									"type": "text"
+								},
+								{
+									"key": "last_name",
+									"value": "Mia",
+									"type": "text"
+								},
+								{
+									"key": "date_of_birth",
+									"value": "1985-03-20",
+									"type": "text"
+								},
+								{
+									"key": "company_name",
+									"value": "Martin Transport",
+									"type": "text"
+								},
+								{
+									"key": "Martin Transport",
+									"value": "Martin Transport",
+									"type": "text"
+								},
+								{
+									"key": "phone_number",
+									"value": "+33787654321",
+									"type": "text"
+								},
+								{
+									"key": "country",
+									"value": "France",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": "456 Transport Avenue, Lyon, France",
+									"type": "text"
+								},
+								{
+									"key": "associated_users",
+									"value": "3",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "carrier@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "password123",
+									"type": "text"
+								},
+								{
+									"key": "vehicle_type",
+									"value": "TRUCK",
+									"type": "text"
+								},
+								{
+									"key": "make_model",
+									"value": "Mercedes Sprinter",
+									"type": "text"
+								},
+								{
+									"key": "license_plate",
+									"value": "AB-123-CD",
+									"type": "text"
+								},
+								{
+									"key": "year_of_registration",
+									"value": "2020-05-10",
+									"type": "text"
+								},
+								{
+									"key": "loading_dimensions",
+									"value": "{\"length\": 3.5, \"width\": 1.8, \"height\": 2.0}",
+									"type": "text"
+								},
+								{
+									"key": "volume_m3",
+									"value": "12.6",
+									"type": "text"
+								},
+								{
+									"key": "payload_capacity",
+									"value": "payload_capacity",
+									"type": "text"
+								},
+								{
+									"key": "pallets_accepted",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": "/C:/Users/user/Downloads/file-sample_150kB.pdf"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/register-carrier-complete",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register-carrier-complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "verify email",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"shipper@gmail.com\",\r\n    \"token\": \"435278\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/verify-email",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verify-email"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "resend-verification-mail",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"nirobhossainalip@gmail.com\",\r\n    \"token\": \"433175\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/auth/verify-email",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"auth",
+								"verify-email"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"let jsonData;\r",
+									"\r",
+									"try {\r",
+									"    jsonData = pm.response.json();\r",
+									"} catch (e) {\r",
+									"    console.error(\"Response is not valid JSON:\", e);\r",
+									"}\r",
+									"\r",
+									"// Check and save tokens to environment\r",
+									"if (jsonData && jsonData.success && jsonData.authorization) {\r",
+									"    const accessToken = jsonData.authorization.access_token;\r",
+									"\r",
+									"    if (accessToken && jsonData.type === \"admin\") {\r",
+									"        pm.collectionVariables.set(\"admin_token\", `Bearer ${accessToken}`);\r",
+									"    } else if (accessToken && jsonData.type === \"shipper\") {\r",
+									"        pm.collectionVariables.set(\"shipper_token\", `Bearer ${accessToken}`);\r",
+									"    } else {\r",
+									"        pm.collectionVariables.set(\"carrier_token\", `Bearer ${accessToken}`);\r",
+									"    }\r",
+									"\r",
+									"    pm.test(\"Access token exists\", function () {\r",
+									"        pm.expect(accessToken).to.not.be.undefined;\r",
+									"    });\r",
+									"\r",
+									"} else {\r",
+									"    console.warn(\"⚠️ No authorization tokens found in response.\");\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"carrier@gmail.com\",\r\n    \"password\": \"password123\"\r\n\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    // \"email\": \"carrier@gmail.com\",\r\n    // \"password\": \"password123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/login",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login Copy",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"john.doe2@example.com\",\r\n    \"password\": \"password123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/login",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "forget password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"admin@mail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/forgot-password",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"forgot-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reset password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"nirobhossainalip@gmail.com\",\r\n    \"token\":\"433175\",\r\n    \"password\":\"12345678\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/auth/reset-password",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"auth",
+								"reset-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "profile",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{admin_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{shipper_token}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "{{carrier_token}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/me",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImNoaW5pQGdtYWlsLmNvbSIsInN1YiI6ImNtZmpodXVqdzAwMGJ3c3YwbnQ1aTM3dm8iLCJpYXQiOjE3NTc5MzA4NTcsImV4cCI6MTc1ODAxNzI1N30.KQLJvrjiOFogJfCNVVbXV7E3dhRRTd7g9zquCeNjFa0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/C:/Users/bdCalling/Pictures/avater.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/auth/update",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"update"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "documents",
+			"item": [
+				{
+					"name": "get-documents",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{shipper_token}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "{{carrier_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{endpoint2}}/api/documents/my-documents",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"my-documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "upload-single-documents",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{carrier_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{shipper_token}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/user/Pictures/Screenshots/Screenshot 2025-10-16 144134.png"
+								},
+								{
+									"key": "type",
+									"value": "ID_CARD",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/documents/upload",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update-document",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im0zQG1haWwuY29tIiwic3ViIjoiY21nNmVxbDIwMDAwcWloYnd0MndnZXNmbSIsImlhdCI6MTc1OTIyOTg4MSwiZXhwIjoxNzU5MjMzNDgxfQ.TNjDnF7gL5veFAElUEdnmifeL4uf06ftR2_2MRNh45M",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1f09de36-6f2c-4a90-8818-62afa3a0ffea"
+								},
+								{
+									"key": "expires_at",
+									"value": "2025-12-31T23:59:59.000Z",
+									"type": "text"
+								},
+								{
+									"key": "file_name",
+									"value": "updated_kbis.pdf",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/documents/cmg7vj19u0006ihko0b55cds3",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"cmg7vj19u0006ihko0b55cds3"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "carrier",
+			"item": [
+				{
+					"name": "vehicle",
+					"item": [
+						{
+							"name": "New Request",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": ""
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "New Request",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": ""
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "mission",
+					"item": [
+						{
+							"name": "get-available-missions",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{carrier_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"freight\", // or \"express\" (+30%)\r\n  \r\n  // Step 1: Loading Details (Chargement)\r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  // Step 2: Goods Details (Marchandise)\r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_range\": \"fresh\", // fresh, frozen, other\r\n  \"other_goods_type\": \"Custom goods\",\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  // Step 3: Delivery Details (Livraison)\r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/available",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"available"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "accept-mission",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{carrier_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": []
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmgugu0gc0000uox0j1pqstdx/accept",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmgugu0gc0000uox0j1pqstdx",
+										"accept"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "my-accepted-missions",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{carrier_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": []
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/my-missions",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"my-missions"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "shipper",
+			"item": [
+				{
+					"name": "mission",
+					"item": [
+						{
+							"name": "create-missions",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{shipper_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-carriers-who-accepted",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{shipper_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmguca81v000yuosoth3drmkh/accepted-carriers",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmguca81v000yuosoth3drmkh",
+										"accepted-carriers"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "confirm-a-carrier",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{shipper_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"carrier_id\": \"cmgubqz48000huosodprarvuu\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmgugu0gc0000uox0j1pqstdx/select-carrier",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmgugu0gc0000uox0j1pqstdx",
+										"select-carrier"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "set-price",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"price\": 251.00\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmg7vx6mt000cihko36rwalr7/set-price",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmg7vx6mt000cihko36rwalr7",
+										"set-price"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "confirm-mission",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{shipper_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmgugu0gc0000uox0j1pqstdx/confirm",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmgugu0gc0000uox0j1pqstdx",
+										"confirm"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-missions",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/my-missions",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"my-missions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get-mission-by-id",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3bTk0NXcwMDAzaWhhNDNhdHdteDk2IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMDA4NjYsImV4cCI6MTc1OTMwNDQ2Nn0.XsZiB58Kq3_ojDoQGLtld0LXKb0hpHI-WxbNt2e9clI",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmg7mcbp0000fiha47jb9w2um",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmg7mcbp0000fiha47jb9w2um"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "review",
+			"item": [
+				{
+					"name": "create-review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvaG4uZG9lMUBleGFtcGxlLmNvbSIsInN1YiI6ImNtZmRtNmFneDAwMDBqdnhjOW55aGd0bG8iLCJpYXQiOjE3NTc0ODc1NzUsImV4cCI6MTc1NzQ5MTE3NX0.qhZ79wVl_pcSCHtJknAzohQu0VJNhErirau7G3FkHL4"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"rating\": 5,\r\n  \"comment\": \"Excellent service! Very professional and on time.\",\r\n  \"mission_id\": \"cmgbrwpwx0000ihfci2jbzcpx\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/reviews",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"reviews"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get-user-review",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im0xMEBtYWlsLmNvbSIsInN1YiI6ImNtZzd3NG12cDAwMGdpaGtvYjc3cWY1em0iLCJ0eXBlIjoiY2FycmllciIsImlhdCI6MTc1OTMxNzUxMSwiZXhwIjoxNzU5MzIxMTExfQ.iS9lhjEqa2k_mTIbUYv6s0Mko6MIS4lbrSEmSfZBmVk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"shipment_type\": \"freight\", // or \"express\" (+30%)\r\n  \r\n  // Step 1: Loading Details (Chargement)\r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  // Step 2: Goods Details (Marchandise)\r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_range\": \"fresh\", // fresh, frozen, other\r\n  \"other_goods_type\": \"Custom goods\",\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  // Step 3: Delivery Details (Livraison)\r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/reviews/user/cmg7w4mvp000gihkob77qf5zm",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"user",
+								"cmg7w4mvp000gihkob77qf5zm"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update-my-review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"rating\": 4,\r\n  \"comment\": \"Updated comment\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/reviews/cmgbtalve0004ihfcm9lv08qn",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"cmgbtalve0004ihfcm9lv08qn"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete-my-review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"rating\": 4,\r\n  \"comment\": \"Updated comment\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/reviews/cmgbtalve0004ihfcm9lv08qn",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"cmgbtalve0004ihfcm9lv08qn"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get-my-review",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"shipment_type\": \"freight\", // or \"express\" (+30%)\r\n  \r\n  // Step 1: Loading Details (Chargement)\r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  // Step 2: Goods Details (Marchandise)\r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_range\": \"fresh\", // fresh, frozen, other\r\n  \"other_goods_type\": \"Custom goods\",\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  // Step 3: Delivery Details (Livraison)\r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/reviews/my-reviews",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"my-reviews"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get-mission-review",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"shipment_type\": \"freight\", // or \"express\" (+30%)\r\n  \r\n  // Step 1: Loading Details (Chargement)\r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  // Step 2: Goods Details (Marchandise)\r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_range\": \"fresh\", // fresh, frozen, other\r\n  \"other_goods_type\": \"Custom goods\",\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  // Step 3: Delivery Details (Livraison)\r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}"
+						},
+						"url": {
+							"raw": "{{endpoint2}}/api/reviews/mission/cmgbrwpwx0000ihfci2jbzcpx",
+							"host": [
+								"{{endpoint2}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"mission",
+								"cmgbrwpwx0000ihfci2jbzcpx"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "endpoint2",
+			"value": "http://localhost:7000"
+		},
+		{
+			"key": "endpoint2",
+			"value": "",
+			"disabled": true
+		},
+		{
+			"key": "admin_token",
+			"value": ""
+		},
+		{
+			"key": "shipper_token",
+			"value": ""
+		},
+		{
+			"key": "carrier_token",
+			"value": ""
+		}
+	]
+}

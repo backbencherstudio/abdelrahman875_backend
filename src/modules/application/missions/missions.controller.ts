@@ -8,7 +8,12 @@ import {
   Req,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { MissionsService } from './missions.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
 import { AcceptMissionDto } from './dto/accept-mission.dto';
@@ -22,16 +27,17 @@ import { Request } from 'express';
 @UseGuards(JwtAuthGuard)
 @Controller('missions')
 export class MissionsController {
-  constructor(private readonly missionsService: MissionsService) { }
+  constructor(private readonly missionsService: MissionsService) {}
 
   @ApiOperation({ summary: 'Create a new mission' })
   @ApiResponse({ status: 201, description: 'Mission created successfully' })
-  
   @Post()
-  async createMission(@Body() createMissionDto: CreateMissionDto, @Req() req: Request) {
+  async createMission(
+    @Body() createMissionDto: CreateMissionDto,
+    @Req() req: Request,
+  ) {
     const userId = (req as any).user.id;
     const userType = (req as any).user.type;
-
 
     // Only shippers can create missions
     if (userType !== 'shipper') {
@@ -45,7 +51,10 @@ export class MissionsController {
   }
 
   @ApiOperation({ summary: 'Get available missions for carriers' })
-  @ApiResponse({ status: 200, description: 'Available missions retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Available missions retrieved successfully',
+  })
   @Get('available')
   async getAvailableMissions(@Req() req: Request) {
     const userId = (req as any).user.id;
@@ -63,7 +72,10 @@ export class MissionsController {
   }
 
   @ApiOperation({ summary: 'Get user missions' })
-  @ApiResponse({ status: 200, description: 'User missions retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User missions retrieved successfully',
+  })
   @Get('my-missions')
   async getMyMissions(@Req() req: Request) {
     const userId = (req as any).user.id;
@@ -91,7 +103,11 @@ export class MissionsController {
       };
     }
 
-    return this.missionsService.acceptMission(missionId, userId, acceptMissionDto);
+    return this.missionsService.acceptMission(
+      missionId,
+      userId,
+      acceptMissionDto,
+    );
   }
 
   @ApiOperation({ summary: 'Get mission by ID' })
@@ -122,12 +138,15 @@ export class MissionsController {
   // ===== NEW ENHANCED MISSION FLOW ENDPOINTS =====
 
   @ApiOperation({ summary: 'Set or adjust mission price (Shipper only)' })
-  @ApiResponse({ status: 200, description: 'Mission price updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mission price updated successfully',
+  })
   @Post(':id/set-price')
   async setMissionPrice(
     @Param('id') missionId: string,
     @Body() setPriceDto: SetPriceDto,
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     const shipperId = (req as any).user.id;
     const userType = (req as any).user.type;
@@ -139,10 +158,16 @@ export class MissionsController {
       };
     }
 
-    return this.missionsService.setMissionPrice(missionId, setPriceDto.price, shipperId);
+    return this.missionsService.setMissionPrice(
+      missionId,
+      setPriceDto.price,
+      shipperId,
+    );
   }
 
-  @ApiOperation({ summary: 'Confirm mission after price setting (Shipper only)' })
+  @ApiOperation({
+    summary: 'Confirm mission after price setting (Shipper only)',
+  })
   @ApiResponse({ status: 200, description: 'Mission confirmed successfully' })
   @Post(':id/confirm')
   async confirmMission(@Param('id') missionId: string, @Req() req: Request) {
@@ -160,7 +185,10 @@ export class MissionsController {
   }
 
   @ApiOperation({ summary: 'Get shipper dashboard data (Shipper only)' })
-  @ApiResponse({ status: 200, description: 'Shipper dashboard data retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Shipper dashboard data retrieved successfully',
+  })
   @Get('dashboard')
   async getShipperDashboard(@Req() req: Request) {
     const shipperId = (req as any).user.id;
@@ -176,10 +204,18 @@ export class MissionsController {
     return this.missionsService.getShipperDashboard(shipperId);
   }
 
-  @ApiOperation({ summary: 'Get carriers who accepted a specific mission (Shipper only)' })
-  @ApiResponse({ status: 200, description: 'List of accepted carriers retrieved successfully' })
+  @ApiOperation({
+    summary: 'Get carriers who accepted a specific mission (Shipper only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of accepted carriers retrieved successfully',
+  })
   @Get(':id/accepted-carriers')
-  async getAcceptedCarriers(@Param('id') missionId: string, @Req() req: Request) {
+  async getAcceptedCarriers(
+    @Param('id') missionId: string,
+    @Req() req: Request,
+  ) {
     const shipperId = (req as any).user.id;
     const userType = (req as any).user.type;
 
@@ -190,7 +226,10 @@ export class MissionsController {
       };
     }
 
-    return this.missionsService.getAcceptedCarriersForMission(missionId, shipperId);
+    return this.missionsService.getAcceptedCarriersForMission(
+      missionId,
+      shipperId,
+    );
   }
 
   @ApiOperation({ summary: 'Shipper selects a carrier for a mission' })
@@ -199,7 +238,7 @@ export class MissionsController {
   async selectCarrier(
     @Param('id') missionId: string,
     @Body() selectCarrierDto: SelectCarrierDto,
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     const shipperId = (req as any).user.id;
     const userType = (req as any).user.type;
@@ -211,8 +250,10 @@ export class MissionsController {
       };
     }
 
-    return this.missionsService.selectCarrier(missionId, selectCarrierDto.carrier_id, shipperId);
+    return this.missionsService.selectCarrier(
+      missionId,
+      selectCarrierDto.carrier_id,
+      shipperId,
+    );
   }
-
-
 }
