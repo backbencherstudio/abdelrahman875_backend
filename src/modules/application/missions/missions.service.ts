@@ -684,14 +684,19 @@ export class MissionsService {
         });
 
         //  Generate Affreightment Confirmation PDF
-        const pdfPath =
+        const pdfUrl =
           await this.pdfService.generateAffreightmentConfirmationPdf(
             updatedMission,
             updatedMission.shipper,
             updatedMission.carrier,
           );
 
-        console.log(pdfPath);
+        await tx.mission.update({
+          where: { id: missionId },
+          data: {
+            confirmation_document_url: pdfUrl,
+          },
+        });
 
         // 3. Mark all other pending acceptances for this mission as REJECTED
         await tx.missionAcceptance.updateMany({

@@ -3,6 +3,8 @@ import { Mission, User } from '@prisma/client';
 import * as PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as path from 'path';
+import appConfig from 'src/config/app.config';
+import { SojebStorage } from '../lib/Disk/SojebStorage';
 
 @Injectable()
 export class PdfService {
@@ -11,17 +13,15 @@ export class PdfService {
     shipper: User,
     carrier: User,
   ): Promise<string> {
-    // preppare PDF output directory
-    const outputDir = path.join(process.cwd(), 'pdfs');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir);
-    }
+    // Generate filename and path within your documents directory
+    const fileName = `affreightment_confirmation_${mission.id}.pdf`;
+    const filePath = path.join(process.cwd(), 'temp', fileName);
 
-    // Define file path
-    const filePath = path.join(
-      outputDir,
-      `affreightment_confirmation_${mission.id}.pdf`,
-    );
+    // Ensure temp directory exists
+    const tempDir = path.dirname(filePath);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
 
     //  Create a new PDF document
     const doc = new PDFDocument();
@@ -141,6 +141,18 @@ export class PdfService {
       stream.on('error', reject);
     });
 
-    return `PDF for mission ${mission.id} between shipper ${shipper.name} and carrier ${carrier.name}`;
+    const fileBuffer = await fs.promises.readFile(filePath);
+
+    const storagePath = `${appConfig().storageUrl.documents}/${fileName}`;
+
+    await SojebStorage.put(storagePath, fileBuffer);
+
+    // Get the public URL
+    const fileUrl = SojebStorage.url(storagePath);
+
+    // Delete temporary local file
+    await fs.promises.unlink(filePath);
+
+    return fileUrl;
   }
 }

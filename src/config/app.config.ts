@@ -89,7 +89,7 @@ export default () => ({
     // chat
     attachment: '/attachment',
     // documents
-    documents: '/documents',
+    documents: 'documents',
   },
 
   defaultUser: {
