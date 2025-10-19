@@ -27,7 +27,7 @@ export class PrismaService
       console.log('Prisma Middleware not called', process.env.PRISMA_ENV);
     } else {
       // use middleware here
-      this.$use(SoftdeleteMiddleware);
+      // this.$use(SoftdeleteMiddleware);
     }
   }
 
