@@ -8,6 +8,11 @@ import { CreateMissionDto } from './dto/create-mission.dto';
 import { MissionStatus, ShipmentType } from '@prisma/client';
 import { AcceptMissionDto } from './dto/accept-mission.dto';
 import { PdfService } from 'src/common/pdf/pdf.service';
+import { ConfirmPickupDto } from './dto/pickup-mission.dto';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
+import * as fs from 'fs';
+import * as path from 'path';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class MissionsService {
@@ -627,6 +632,86 @@ export class MissionsService {
         message: error.message,
       };
     }
+  }
+
+  async confirmPickup(
+    pickupData: ConfirmPickupDto,
+    files: { [fieldname: string]: Express.Multer.File[] },
+    missionId: string,
+    carrierId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const mission = await tx.mission.findUnique({
+        where: { id: missionId },
+      });
+
+      if (!mission) throw new NotFoundException('Mission not found');
+
+      if (mission.status === MissionStatus.PICKUP_CONFIRMED) {
+        throw new BadRequestException(
+          'Pickup is already confirmed for this mission',
+        );
+      }
+
+      if (mission.status !== MissionStatus.ACCEPTED) {
+        throw new BadRequestException(
+          'Pickup can only be confirmed when mission is in ACCEPTED status',
+        );
+      }
+
+      if (mission.carrier_id !== carrierId) {
+        throw new BadRequestException(
+          'Only the assigned carrier can confirm pickup',
+        );
+      }
+
+      const uploadedFiles: { [key: string]: string } = {};
+
+      for (const [fieldname, fileArray] of Object.entries(files)) {
+        if (!fileArray || fileArray.length === 0) continue;
+
+        const file = fileArray[0];
+        const fileName = `${fieldname}_${mission.id}_${Date.now()}_${file.originalname}`;
+        const tempPath = path.join(process.cwd(), 'temp', fileName);
+
+        // Write buffer to temp file
+        await fs.promises.writeFile(tempPath, file.buffer);
+
+        // Upload to SojebStorage
+        const storagePath = `${appConfig().storageUrl.documents}/${fileName}`;
+        await SojebStorage.put(storagePath, file.buffer);
+
+        // Save the URL
+        uploadedFiles[fieldname] = SojebStorage.url(storagePath);
+
+        // Remove temp file
+        await fs.promises.unlink(tempPath);
+      }
+
+      const updatedMission = await tx.mission.update({
+        where: { id: missionId },
+        data: { status: MissionStatus.PICKUP_CONFIRMED },
+        include: { shipper: true, carrier: true },
+      });
+
+      const cmrUrl = await this.pdfService.generateCMRPdf(
+        updatedMission,
+        updatedMission.shipper,
+        updatedMission.carrier,
+      );
+
+      return await tx.mission.update({
+        where: { id: missionId },
+        data: {
+          cmr_document_url: cmrUrl,
+          pickup_photo: uploadedFiles.pickup_photo,
+          pickup_signature: uploadedFiles.pickup_signature,
+          loading_notes: pickupData.loading_notes,
+          special_instructions: pickupData.special_instructions,
+        },
+        include: { shipper: true, carrier: true },
+      });
+    });
   }
 
   async selectCarrier(missionId: string, carrierId: string, shipperId: string) {

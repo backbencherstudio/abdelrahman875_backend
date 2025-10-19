@@ -6,7 +6,8 @@ import {
   Param,
   UseGuards,
   Req,
-  Query,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +22,9 @@ import { SetPriceDto } from './dto/set-price.dto';
 import { SelectCarrierDto } from './dto/select-carrier.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Request } from 'express';
+import { ConfirmPickupDto } from './dto/pickup-mission.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @ApiTags('missions')
 @ApiBearerAuth()
@@ -229,6 +233,45 @@ export class MissionsController {
     return this.missionsService.getAcceptedCarriersForMission(
       missionId,
       shipperId,
+    );
+  }
+
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'pickup_photo', maxCount: 1 },
+        { name: 'pickup_signature', maxCount: 1 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 10 * 1024 * 1024 },
+      },
+    ),
+  )
+  @Post(':id/confirm-pickup')
+  async confirmPickup(
+    @Param('id') missionId: string,
+    @Body() pickupData: ConfirmPickupDto,
+    @Req() req: Request,
+  ) {
+    const carrierId = (req as any).user.id;
+    const userType = (req as any).user.type;
+
+    if (userType !== 'carrier') {
+      return { success: false, message: 'Only carrier can select carriers' };
+    }
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    if (!files?.pickup_photo?.[0] || !files?.pickup_signature?.[0]) {
+      throw new BadRequestException('Pickup photo and signature are required');
+    }
+
+    return this.missionsService.confirmPickup(
+      pickupData,
+      files,
+      missionId,
+      carrierId,
     );
   }
 

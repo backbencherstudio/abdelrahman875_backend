@@ -155,4 +155,105 @@ export class PdfService {
 
     return fileUrl;
   }
+
+  async generateCMRPdf(
+    mission: Mission,
+    shipper: User,
+    carrier: User,
+  ): Promise<string> {
+    const fileName = `cmr_${mission.id}.pdf`;
+    const filePath = path.join(process.cwd(), 'temp', fileName);
+
+    const tempDir = path.dirname(filePath);
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const doc = new PDFDocument();
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // HEADER
+    doc
+      .fontSize(18)
+      .text('CMR – International Consignment Note', { align: 'center' });
+    doc.moveDown();
+
+    // CMR REQUIRED FIELDS NOTICE (as per spec)
+    doc
+      .fontSize(11)
+      .text('CMR — Required Information (Client pending confirmation):', {
+        underline: true,
+      })
+      .moveDown(0.5)
+      .text('• Consignor / Shipper identity')
+      .text('• Carrier identity')
+      .text('• Consignee identity (pending client input)')
+      .text('• Description of goods')
+      .text('• Weight and/or volume of goods')
+      .text('• Route (origin ➝ destination)')
+      .text('• Responsibilities & liabilities wording (pending client input)')
+      .moveDown(1.5);
+
+    // META
+    doc.fontSize(10).text(`Mission ID: ${mission.id}`);
+    doc.text(`Generated: ${new Date().toLocaleString()}`);
+    doc.moveDown(2);
+
+    // CONSIGNOR (SHIPPER)
+    doc
+      .fontSize(14)
+      .text('Consignor (Shipper)', { underline: true })
+      .moveDown(0.5);
+    doc.fontSize(11);
+    doc.text(`Name: ${shipper.name}`);
+    doc.text(`Email: ${shipper.email}`);
+    doc.text(`Phone: ${shipper.phone_number || 'N/A'}`).moveDown(1.5);
+
+    // CARRIER
+    doc.fontSize(14).text('Carrier', { underline: true }).moveDown(0.5);
+    doc.fontSize(11);
+    doc.text(`Name: ${carrier.name}`);
+    doc.text(`Email: ${carrier.email}`);
+    doc.text(`Phone: ${carrier.phone_number || 'N/A'}`).moveDown(1.5);
+
+    // GOODS
+    doc.fontSize(14).text('Goods Details', { underline: true }).moveDown(0.5);
+    doc.fontSize(11);
+    doc.text(`Goods: ${mission.goods_type}`);
+    doc.text(`Weight: ${mission.weight_kg} kg`);
+    doc.text(`Volume: ${mission.volume_m3} m³`).moveDown(1.5);
+
+    // ROUTE
+    doc
+      .fontSize(14)
+      .text('Route Information', { underline: true })
+      .moveDown(0.5);
+    doc.fontSize(11);
+    doc.text(`Pickup: ${mission.pickup_address}`);
+    doc.text(`Delivery: ${mission.delivery_address}`).moveDown(1.5);
+
+    // FOOTER
+    doc.moveDown();
+    doc
+      .fontSize(10)
+      .text(
+        'This is a placeholder CMR. Final fields will be added when provided by the client.',
+        { align: 'center', italics: true },
+      );
+
+    doc.end();
+
+    await new Promise<void>((resolve, reject) => {
+      stream.on('finish', () => resolve());
+      stream.on('error', reject);
+    });
+
+    const buffer = await fs.promises.readFile(filePath);
+    const storagePath = `${appConfig().storageUrl.documents}/${fileName}`;
+
+    await SojebStorage.put(storagePath, buffer);
+    const fileUrl = SojebStorage.url(storagePath);
+
+    await fs.promises.unlink(filePath);
+    return fileUrl;
+  }
 }
