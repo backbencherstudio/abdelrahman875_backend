@@ -44,7 +44,7 @@ export class MailService {
         to: email,
         from: from,
         subject: subject,
-        template: 'email-verification',
+        template: './email-verification',
         context: {
           name: name,
           otp: otp,

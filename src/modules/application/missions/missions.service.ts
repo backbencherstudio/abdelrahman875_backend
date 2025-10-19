@@ -1,14 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
 import { MissionStatus, ShipmentType } from '@prisma/client';
 import { AcceptMissionDto } from './dto/accept-mission.dto';
-import { SetPriceDto } from './dto/set-price.dto';
-import { SelectCarrierDto } from './dto/select-carrier.dto';
+import { PdfService } from 'src/common/pdf/pdf.service';
+import { ConfirmPickupDto } from './dto/pickup-mission.dto';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
+import * as fs from 'fs';
+import * as path from 'path';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class MissionsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private readonly pdfService: PdfService,
+  ) {}
 
   async createMission(createMissionDto: CreateMissionDto, shipperId: string) {
     try {
@@ -16,30 +27,40 @@ export class MissionsService {
 
       const shipper = await this.prisma.user.findUnique({
         where: { id: shipperId },
-        select: { id: true, name: true, type: true }
+        select: { id: true, name: true, type: true },
       });
 
       if (!shipper) {
         throw new BadRequestException(`Shipper with ID ${shipperId} not found`);
       }
 
-
       // Calculate distance if not provided
       let distance = createMissionDto.distance_km;
       if (!distance) {
         distance = await this.calculateDistance(
           createMissionDto.loading_address,
-          createMissionDto.delivery_address
+          createMissionDto.delivery_address,
         );
       }
 
       // Calculate pricing
-      const pricing = this.calculatePricing(distance, createMissionDto.shipment_type);
+      const pricing = this.calculatePricing(
+        distance,
+        createMissionDto.shipment_type,
+      );
 
       // Calculate volume if not provided
       let volume = createMissionDto.volume_m3;
-      if (!volume && createMissionDto.length_m && createMissionDto.width_m && createMissionDto.height_m) {
-        volume = createMissionDto.length_m * createMissionDto.width_m * createMissionDto.height_m;
+      if (
+        !volume &&
+        createMissionDto.length_m &&
+        createMissionDto.width_m &&
+        createMissionDto.height_m
+      ) {
+        volume =
+          createMissionDto.length_m *
+          createMissionDto.width_m *
+          createMissionDto.height_m;
       }
 
       // Create mission
@@ -54,7 +75,8 @@ export class MissionsService {
           delivery_postal_code: createMissionDto.delivery_postal_code,
 
           // Contact Information
-          pickup_contact_name: createMissionDto.loading_staff_name || 'Contact Name',
+          pickup_contact_name:
+            createMissionDto.loading_staff_name || 'Contact Name',
           pickup_contact_phone: createMissionDto.shipper_phone,
           delivery_contact_name: createMissionDto.recipient_name,
           delivery_contact_phone: createMissionDto.recipient_phone,
@@ -69,7 +91,9 @@ export class MissionsService {
           package_height: createMissionDto.height_m,
 
           // Delivery Timing
-          delivery_date: createMissionDto.delivery_date ? new Date(createMissionDto.delivery_date) : null,
+          delivery_date: createMissionDto.delivery_date
+            ? new Date(createMissionDto.delivery_date)
+            : null,
           delivery_time: createMissionDto.delivery_time,
 
           // Instructions
@@ -82,7 +106,9 @@ export class MissionsService {
           parcels_count: 1, // Default to 1, can be calculated based on dimensions
           weight_kg: createMissionDto.weight_kg,
           volume_m3: volume || 0,
-          special_instructions: createMissionDto.loading_instructions || createMissionDto.delivery_instructions,
+          special_instructions:
+            createMissionDto.loading_instructions ||
+            createMissionDto.delivery_instructions,
           fragile: createMissionDto.fragile || false,
 
           // Timing
@@ -94,16 +120,16 @@ export class MissionsService {
           distance_km: distance,
           base_price: pricing.basePrice,
           final_price: pricing.finalPrice,
-          commission_rate: 0.10, // 10% platform commission
+          commission_rate: 0.1, // 10% platform commission
           commission_amount: pricing.commissionAmount,
-          vat_rate: 0.20, // 20% VAT
+          vat_rate: 0.2, // 20% VAT
           vat_amount: pricing.vatAmount,
           // Status
           status: MissionStatus.CREATED,
 
           // Relations
           shipper: {
-            connect: { id: shipperId }
+            connect: { id: shipperId },
           },
         },
       });
@@ -126,7 +152,7 @@ export class MissionsService {
       const missions = await this.prisma.mission.findMany({
         where: {
           status: {
-            in: [MissionStatus.SEARCHING_CARRIER, MissionStatus.CREATED] // Allow both for testing
+            in: [MissionStatus.SEARCHING_CARRIER, MissionStatus.CREATED], // Allow both for testing
           },
           carrier_id: null,
         },
@@ -161,9 +187,10 @@ export class MissionsService {
 
   async getMyMissions(userId: string, userType: string) {
     try {
-      const whereClause = userType === 'shipper'
-        ? { shipper_id: userId }
-        : { carrier_id: userId };
+      const whereClause =
+        userType === 'shipper'
+          ? { shipper_id: userId }
+          : { carrier_id: userId };
 
       const missions = await this.prisma.mission.findMany({
         where: whereClause,
@@ -202,12 +229,16 @@ export class MissionsService {
     }
   }
 
-  async acceptMission(missionId: string, carrierId: string, acceptMissionDto: AcceptMissionDto) {
+  async acceptMission(
+    missionId: string,
+    carrierId: string,
+    acceptMissionDto: AcceptMissionDto,
+  ) {
     try {
       // Validate carrier exists and is active
       const carrier = await this.prisma.user.findUnique({
         where: { id: carrierId },
-        select: { id: true, type: true, status: true }
+        select: { id: true, type: true, status: true },
       });
 
       if (!carrier) {
@@ -231,24 +262,33 @@ export class MissionsService {
         throw new NotFoundException('Mission not found');
       }
 
-      if (mission.status !== MissionStatus.SEARCHING_CARRIER && mission.status !== MissionStatus.CREATED) {
-        throw new BadRequestException('Mission is not available for acceptance');
+      if (
+        mission.status !== MissionStatus.SEARCHING_CARRIER &&
+        mission.status !== MissionStatus.CREATED
+      ) {
+        throw new BadRequestException(
+          'Mission is not available for acceptance',
+        );
       }
 
       // Check if mission already has a selected carrier
       if (mission.carrier_id) {
-        throw new BadRequestException('Mission has already been assigned to a carrier');
+        throw new BadRequestException(
+          'Mission has already been assigned to a carrier',
+        );
       }
 
       // Check if carrier has already accepted this mission
-      const existingAcceptance = await this.prisma.missionAcceptance.findUnique({
-        where: {
-          mission_id_carrier_id: {
-            mission_id: missionId,
-            carrier_id: carrierId,
+      const existingAcceptance = await this.prisma.missionAcceptance.findUnique(
+        {
+          where: {
+            mission_id_carrier_id: {
+              mission_id: missionId,
+              carrier_id: carrierId,
+            },
           },
         },
-      });
+      );
 
       if (existingAcceptance) {
         throw new BadRequestException('You have already accepted this mission');
@@ -282,7 +322,8 @@ export class MissionsService {
 
       return {
         success: true,
-        message: 'Mission acceptance submitted successfully. Waiting for shipper selection.',
+        message:
+          'Mission acceptance submitted successfully. Waiting for shipper selection.',
         data: acceptance,
       };
     } catch (error) {
@@ -344,11 +385,11 @@ export class MissionsService {
 
   private calculatePricing(distance: number, shipmentType: ShipmentType) {
     // Base pricing per km
-    const baseRatePerKm = shipmentType === ShipmentType.EXPRESS ? 1.20 : 0.70; // Express +30%
+    const baseRatePerKm = shipmentType === ShipmentType.EXPRESS ? 1.2 : 0.7; // Express +30%
 
     const basePrice = distance * baseRatePerKm;
     const commissionRate = 0.15; // 15% platform commission
-    const vatRate = 0.20; // 20% VAT
+    const vatRate = 0.2; // 20% VAT
 
     // Calculate commission (platform charge)
     const commissionAmount = basePrice * commissionRate;
@@ -397,14 +438,26 @@ export class MissionsService {
 
   // ===== NEW ENHANCED MISSION FLOW METHODS =====
 
-  async setMissionPrice(missionId: string, newPrice: number, shipperId: string) {
+  async setMissionPrice(
+    missionId: string,
+    newPrice: number,
+    shipperId: string,
+  ) {
     try {
-      const mission = await this.prisma.mission.findUnique({ where: { id: missionId } });
+      const mission = await this.prisma.mission.findUnique({
+        where: { id: missionId },
+      });
       if (!mission) throw new NotFoundException('Mission not found');
-      if (mission.shipper_id !== shipperId) throw new BadRequestException('Only the mission creator can set the price');
-      if (newPrice < mission.final_price) throw new BadRequestException('New price cannot be lower than the calculated price');
+      if (mission.shipper_id !== shipperId)
+        throw new BadRequestException(
+          'Only the mission creator can set the price',
+        );
+      if (newPrice < mission.final_price)
+        throw new BadRequestException(
+          'New price cannot be lower than the calculated price',
+        );
 
-      const commissionRate = 0.10;
+      const commissionRate = 0.1;
       const newBasePrice = newPrice / (1 + commissionRate);
       const newCommissionAmount = newPrice - newBasePrice;
 
@@ -432,10 +485,18 @@ export class MissionsService {
 
   async confirmMission(missionId: string, shipperId: string) {
     try {
-      const mission = await this.prisma.mission.findUnique({ where: { id: missionId } });
+      const mission = await this.prisma.mission.findUnique({
+        where: { id: missionId },
+      });
       if (!mission) throw new NotFoundException('Mission not found');
-      if (mission.shipper_id !== shipperId) throw new BadRequestException('Only the mission creator can confirm the mission');
-      if (mission.status !== MissionStatus.CREATED) throw new BadRequestException('Mission can only be confirmed if in CREATED status');
+      if (mission.shipper_id !== shipperId)
+        throw new BadRequestException(
+          'Only the mission creator can confirm the mission',
+        );
+      if (mission.status !== MissionStatus.CREATED)
+        throw new BadRequestException(
+          'Mission can only be confirmed if in CREATED status',
+        );
 
       // TODO: Integrate actual payment processing here
       // For now, simulate payment confirmation by changing status
@@ -463,7 +524,10 @@ export class MissionsService {
     try {
       const newOffers = await this.prisma.missionAcceptance.findMany({
         where: {
-          mission: { shipper_id: shipperId, status: MissionStatus.SEARCHING_CARRIER },
+          mission: {
+            shipper_id: shipperId,
+            status: MissionStatus.SEARCHING_CARRIER,
+          },
           status: 'PENDING',
         },
         include: {
@@ -485,7 +549,11 @@ export class MissionsService {
         where: {
           shipper_id: shipperId,
           status: {
-            in: [MissionStatus.ACCEPTED, MissionStatus.PICKUP_CONFIRMED, MissionStatus.IN_TRANSIT],
+            in: [
+              MissionStatus.ACCEPTED,
+              MissionStatus.PICKUP_CONFIRMED,
+              MissionStatus.IN_TRANSIT,
+            ],
           },
         },
         orderBy: { created_at: 'desc' },
@@ -495,7 +563,12 @@ export class MissionsService {
         where: {
           shipper_id: shipperId,
           status: {
-            in: [MissionStatus.DELIVERED, MissionStatus.COMPLETED, MissionStatus.CANCELLED, MissionStatus.DISPUTED],
+            in: [
+              MissionStatus.DELIVERED,
+              MissionStatus.COMPLETED,
+              MissionStatus.CANCELLED,
+              MissionStatus.DISPUTED,
+            ],
           },
         },
         orderBy: { created_at: 'desc' },
@@ -520,9 +593,14 @@ export class MissionsService {
 
   async getAcceptedCarriersForMission(missionId: string, shipperId: string) {
     try {
-      const mission = await this.prisma.mission.findUnique({ where: { id: missionId } });
+      const mission = await this.prisma.mission.findUnique({
+        where: { id: missionId },
+      });
       if (!mission) throw new NotFoundException('Mission not found');
-      if (mission.shipper_id !== shipperId) throw new BadRequestException('Only the mission creator can view accepted carriers');
+      if (mission.shipper_id !== shipperId)
+        throw new BadRequestException(
+          'Only the mission creator can view accepted carriers',
+        );
 
       const acceptedCarriers = await this.prisma.missionAcceptance.findMany({
         where: {
@@ -556,14 +634,105 @@ export class MissionsService {
     }
   }
 
+  async confirmPickup(
+    pickupData: ConfirmPickupDto,
+    files: { [fieldname: string]: Express.Multer.File[] },
+    missionId: string,
+    carrierId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const mission = await tx.mission.findUnique({
+        where: { id: missionId },
+      });
+
+      if (!mission) throw new NotFoundException('Mission not found');
+
+      if (mission.status === MissionStatus.PICKUP_CONFIRMED) {
+        throw new BadRequestException(
+          'Pickup is already confirmed for this mission',
+        );
+      }
+
+      if (mission.status !== MissionStatus.ACCEPTED) {
+        throw new BadRequestException(
+          'Pickup can only be confirmed when mission is in ACCEPTED status',
+        );
+      }
+
+      if (mission.carrier_id !== carrierId) {
+        throw new BadRequestException(
+          'Only the assigned carrier can confirm pickup',
+        );
+      }
+
+      const uploadedFiles: { [key: string]: string } = {};
+
+      for (const [fieldname, fileArray] of Object.entries(files)) {
+        if (!fileArray || fileArray.length === 0) continue;
+
+        const file = fileArray[0];
+        const fileName = `${fieldname}_${mission.id}_${Date.now()}_${file.originalname}`;
+        const tempPath = path.join(process.cwd(), 'temp', fileName);
+
+        // Write buffer to temp file
+        await fs.promises.writeFile(tempPath, file.buffer);
+
+        // Upload to SojebStorage
+        const storagePath = `${appConfig().storageUrl.documents}/${fileName}`;
+        await SojebStorage.put(storagePath, file.buffer);
+
+        // Save the URL
+        uploadedFiles[fieldname] = SojebStorage.url(storagePath);
+
+        // Remove temp file
+        await fs.promises.unlink(tempPath);
+      }
+
+      const updatedMission = await tx.mission.update({
+        where: { id: missionId },
+        data: { status: MissionStatus.PICKUP_CONFIRMED },
+        include: { shipper: true, carrier: true },
+      });
+
+      const cmrUrl = await this.pdfService.generateCMRPdf(
+        updatedMission,
+        updatedMission.shipper,
+        updatedMission.carrier,
+      );
+
+      return await tx.mission.update({
+        where: { id: missionId },
+        data: {
+          cmr_document_url: cmrUrl,
+          pickup_photo: uploadedFiles.pickup_photo,
+          pickup_signature: uploadedFiles.pickup_signature,
+          loading_notes: pickupData.loading_notes,
+          special_instructions: pickupData.special_instructions,
+        },
+        include: { shipper: true, carrier: true },
+      });
+    });
+  }
+
   async selectCarrier(missionId: string, carrierId: string, shipperId: string) {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const mission = await tx.mission.findUnique({ where: { id: missionId } });
+        const mission = await tx.mission.findUnique({
+          where: { id: missionId },
+        });
         if (!mission) throw new NotFoundException('Mission not found');
-        if (mission.shipper_id !== shipperId) throw new BadRequestException('Only the mission creator can select a carrier');
-        if (mission.status !== MissionStatus.SEARCHING_CARRIER) throw new BadRequestException('Carrier can only be selected if mission is in SEARCHING_CARRIER status');
-        if (mission.carrier_id) throw new BadRequestException('Mission already has an assigned carrier');
+        if (mission.shipper_id !== shipperId)
+          throw new BadRequestException(
+            'Only the mission creator can select a carrier',
+          );
+        if (mission.status !== MissionStatus.SEARCHING_CARRIER)
+          throw new BadRequestException(
+            'Carrier can only be selected if mission is in SEARCHING_CARRIER status',
+          );
+        if (mission.carrier_id)
+          throw new BadRequestException(
+            'Mission already has an assigned carrier',
+          );
 
         const acceptance = await tx.missionAcceptance.findUnique({
           where: {
@@ -575,7 +744,9 @@ export class MissionsService {
         });
 
         if (!acceptance || acceptance.status !== 'PENDING') {
-          throw new BadRequestException('Carrier has not accepted this mission or acceptance is not pending');
+          throw new BadRequestException(
+            'Carrier has not accepted this mission or acceptance is not pending',
+          );
         }
 
         // 1. Update mission with selected carrier and status
@@ -585,12 +756,31 @@ export class MissionsService {
             carrier_id: carrierId,
             status: MissionStatus.ACCEPTED,
           },
+          include: {
+            shipper: true,
+            carrier: true,
+          },
         });
 
         // 2. Mark selected acceptance as ACCEPTED
         await tx.missionAcceptance.update({
           where: { id: acceptance.id },
           data: { status: 'ACCEPTED' },
+        });
+
+        //  Generate Affreightment Confirmation PDF
+        const pdfUrl =
+          await this.pdfService.generateAffreightmentConfirmationPdf(
+            updatedMission,
+            updatedMission.shipper,
+            updatedMission.carrier,
+          );
+
+        await tx.mission.update({
+          where: { id: missionId },
+          data: {
+            confirmation_document_url: pdfUrl,
+          },
         });
 
         // 3. Mark all other pending acceptances for this mission as REJECTED
@@ -617,8 +807,10 @@ export class MissionsService {
     }
   }
 
-
-  private async calculateDistance(pickupAddress: string, deliveryAddress: string): Promise<number> {
+  private async calculateDistance(
+    pickupAddress: string,
+    deliveryAddress: string,
+  ): Promise<number> {
     // TODO: Implement actual distance calculation using Google Maps API or similar
     // For now, return a mock distance
     return Math.random() * 100 + 10; // Random distance between 10-110 km

@@ -420,7 +420,7 @@ export class AuthService {
       // send otp code to email
       await this.mailService.sendOtpCodeToEmail({
         email: email,
-        name: name,
+        name: first_name,
         otp: token,
       });
 
