@@ -485,7 +485,7 @@ export class MissionsService {
         throw new BadRequestException(
           'Only the mission creator can confirm the mission',
         );
-      console.log(mission.status);
+
       if (mission.status === MissionStatus.SEARCHING_CARRIER) {
         throw new BadRequestException('Mission is alreay in search mode');
       }
@@ -505,7 +505,7 @@ export class MissionsService {
 
       return {
         success: true,
-        message: 'Mission confirmed successfully',
+        message: 'Mission confirmed successfully.',
         data: updatedMission,
       };
     } catch (error) {
