@@ -48,7 +48,7 @@ export class DocumentsController {
     @Body('file_name') fileName?: string,
   ) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       return await this.documentsService.uploadDocument(userId, type as DocumentType, file, fileName);
     } catch (error) {
       return {
