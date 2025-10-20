@@ -232,10 +232,9 @@ export class MissionsService {
   async acceptMission(
     missionId: string,
     carrierId: string,
-    acceptMissionDto: AcceptMissionDto,
+    dto: AcceptMissionDto,
   ) {
     try {
-      // Validate carrier exists and is active
       const carrier = await this.prisma.user.findUnique({
         where: { id: carrierId },
         select: { id: true, type: true, status: true },
@@ -244,16 +243,13 @@ export class MissionsService {
       if (!carrier) {
         throw new BadRequestException('Carrier not found');
       }
-
       if (carrier.type !== 'carrier') {
         throw new BadRequestException('Only carriers can accept missions');
       }
-
       if (carrier.status !== 1) {
         throw new BadRequestException('Carrier account is not active');
       }
 
-      // Check if mission exists and is available
       const mission = await this.prisma.mission.findUnique({
         where: { id: missionId },
       });
@@ -261,45 +257,44 @@ export class MissionsService {
       if (!mission) {
         throw new NotFoundException('Mission not found');
       }
-
-      if (
-        mission.status !== MissionStatus.SEARCHING_CARRIER &&
-        mission.status !== MissionStatus.CREATED
-      ) {
+      if (mission.status !== MissionStatus.SEARCHING_CARRIER) {
         throw new BadRequestException(
-          'Mission is not available for acceptance',
+          'Mission is not available for acceptance at this time',
         );
       }
-
-      // Check if mission already has a selected carrier
       if (mission.carrier_id) {
         throw new BadRequestException(
           'Mission has already been assigned to a carrier',
         );
       }
-
-      // Check if carrier has already accepted this mission
-      const existingAcceptance = await this.prisma.missionAcceptance.findUnique(
-        {
-          where: {
-            mission_id_carrier_id: {
-              mission_id: missionId,
-              carrier_id: carrierId,
-            },
+      const alreadyAccepted = await this.prisma.missionAcceptance.findUnique({
+        where: {
+          mission_id_carrier_id: {
+            mission_id: missionId,
+            carrier_id: carrierId,
           },
         },
-      );
+      });
 
-      if (existingAcceptance) {
-        throw new BadRequestException('You have already accepted this mission');
+      if (alreadyAccepted) {
+        if (alreadyAccepted.status === 'REJECTED') {
+          throw new BadRequestException(
+            'You have already rejected this mission',
+          );
+        }
+
+        if (alreadyAccepted.status === 'ACCEPTED') {
+          throw new BadRequestException(
+            'You have already accepted this mission',
+          );
+        }
       }
 
-      // Create mission acceptance record (PENDING status)
       const acceptance = await this.prisma.missionAcceptance.create({
         data: {
           mission_id: missionId,
           carrier_id: carrierId,
-          message: acceptMissionDto.message,
+          message: dto.message,
           status: 'PENDING',
         },
         include: {
@@ -318,12 +313,9 @@ export class MissionsService {
         },
       });
 
-      // TODO: Send notification to shipper about new acceptance
-
       return {
         success: true,
-        message:
-          'Mission acceptance submitted successfully. Waiting for shipper selection.',
+        message: 'Mission acceptance submitted. Waiting for shipper selection.',
         data: acceptance,
       };
     } catch (error) {
@@ -493,6 +485,10 @@ export class MissionsService {
         throw new BadRequestException(
           'Only the mission creator can confirm the mission',
         );
+      console.log(mission.status);
+      if (mission.status === MissionStatus.SEARCHING_CARRIER) {
+        throw new BadRequestException('Mission is alreay in search mode');
+      }
       if (mission.status !== MissionStatus.CREATED)
         throw new BadRequestException(
           'Mission can only be confirmed if in CREATED status',
@@ -805,6 +801,116 @@ export class MissionsService {
         message: error.message,
       };
     }
+  }
+
+  async cancelMission(missionId: string, userId: string) {
+    const mission = await this.prisma.mission.findUnique({
+      where: { id: missionId },
+    });
+
+    if (!mission) {
+      throw new NotFoundException('Mission not found');
+    }
+
+    if (mission.status === MissionStatus.CANCELLED) {
+      throw new BadRequestException('Mission is already cancelled');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // SHIPPER CANCEL
+    if (user.type === 'shipper') {
+      if (mission.shipper_id !== userId) {
+        throw new BadRequestException(
+          'Only the mission creator can cancel the mission',
+        );
+      }
+
+      const shipperCancellableStatuses: MissionStatus[] = [
+        MissionStatus.CREATED,
+        MissionStatus.PAYMENT_PENDING,
+        MissionStatus.PAYMENT_CONFIRMED,
+        MissionStatus.SEARCHING_CARRIER,
+        MissionStatus.ACCEPTED,
+      ];
+
+      if (!shipperCancellableStatuses.includes(mission.status)) {
+        throw new BadRequestException(
+          'Mission cannot be cancelled at this stage by shipper',
+        );
+      }
+
+      // Cancel mission and unlink carrier
+      const cancelledMission = await this.prisma.mission.update({
+        where: { id: missionId },
+        data: { status: MissionStatus.CANCELLED, carrier_id: null },
+      });
+
+      await this.prisma.missionAcceptance.updateMany({
+        where: {
+          mission_id: missionId,
+          status: { in: ['PENDING', 'ACCEPTED'] },
+        },
+        data: {
+          status: 'REJECTED',
+          message: 'Mission was cancelled by shipper',
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Mission cancelled successfully by shipper',
+        data: cancelledMission,
+      };
+    }
+
+    // CARRIER CANCEL
+    if (user.type === 'carrier') {
+      const acceptance = await this.prisma.missionAcceptance.findUnique({
+        where: {
+          mission_id_carrier_id: {
+            mission_id: missionId,
+            carrier_id: userId,
+          },
+        },
+      });
+
+      if (!acceptance || acceptance.status !== 'ACCEPTED') {
+        throw new BadRequestException(
+          'You have not accepted this mission or it is not active',
+        );
+      }
+
+      // Update carrier acceptance as rejected
+      await this.prisma.missionAcceptance.update({
+        where: { id: acceptance.id },
+        data: { status: 'REJECTED', message: 'Cancelled by carrier' },
+      });
+
+      // If carrier was assigned to the mission, unlink them
+      if (mission.carrier_id === userId) {
+        await this.prisma.mission.update({
+          where: { id: missionId },
+          data: { carrier_id: null, status: MissionStatus.SEARCHING_CARRIER },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Mission cancelled by carrier',
+        data: null,
+      };
+    }
+
+    throw new BadRequestException(
+      'Only shippers or carriers can cancel missions',
+    );
   }
 
   private async calculateDistance(
