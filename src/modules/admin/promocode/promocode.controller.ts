@@ -65,9 +65,14 @@ export class PromoCodeController {
 
   @ApiResponse({ description: 'Assign promo code to specific users' })
   @Post(':id/assign')
-  async assignToUsers(@Param('id') id: string, @Body() assignPromoCodeDto: AssignPromoCodeDto) {
+  async assignToUsers(@Param('id') id: string, @Body() body: { 
+    user_ids: string[] }) {
     try {
-      assignPromoCodeDto.promo_code_id = id;
+      // assignPromoCodeDto.promo_code_id = id;
+      const assignPromoCodeDto: AssignPromoCodeDto = {
+        promo_code_id: id,
+        user_ids: body.user_ids
+        };
       const result = await this.promoCodeService.assignToUsers(assignPromoCodeDto);
       return result;
     } catch (error) {
