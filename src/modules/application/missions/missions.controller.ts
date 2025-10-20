@@ -8,6 +8,7 @@ import {
   Req,
   UseInterceptors,
   BadRequestException,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -298,5 +299,22 @@ export class MissionsController {
       selectCarrierDto.carrier_id,
       shipperId,
     );
+  }
+
+  @ApiOperation({ summary: 'Cancel mission' })
+  @ApiResponse({ status: 200, description: 'Mission cancelled successfully' })
+  @Delete(':id/cancel-mission')
+  async cancelMission(@Param('id') missionId: string, @Req() req: Request) {
+    const userId = (req as any).user.id;
+    const userType = (req as any).user.type;
+
+    if (userType === 'shipper' || userType === 'carrier') {
+      return this.missionsService.cancelMission(missionId, userId);
+    }
+
+    return {
+      success: false,
+      message: 'Only shippers or carriers can cancel missions',
+    };
   }
 }
