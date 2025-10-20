@@ -958,7 +958,7 @@ export class AuthController {
     @UploadedFile() image: Express.Multer.File,
   ) {
     try {
-      const user_id = req.user.userId;
+      const user_id = req.user.id;
       const response = await this.authService.updateUser(user_id, data, image);
       return response;
     } catch (error) {
