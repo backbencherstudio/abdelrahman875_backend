@@ -94,6 +94,7 @@ model User {
   shipper_payments    Payment[]           @relation("ShipperPayments")
   carrier_payments    Payment[]           @relation("CarrierPayments")
   carrier_acceptances MissionAcceptance[] @relation("CarrierAcceptances")
+  missions            MissionTimeline[]
 
   // === ADD THESE FIELDS FOR APPROVAL FLOW ===
   application_status           UserApplicationStatus @default(PENDING)
@@ -542,7 +543,7 @@ model Mission {
 
   // Goods Information
   goods_type           String
-  temperature_required TemperatureRange? // Predefined temperature range
+  // temperature_required TemperatureRange? // Predefined temperature range
   // Package Dimensions
   package_length       Float? // meters
   package_width        Float? // meters
@@ -600,10 +601,13 @@ model Mission {
   invoice_document_url      String?
 
   // Relations
-  shipper_id String
-  shipper    User    @relation("ShipperMissions", fields: [shipper_id], references: [id])
-  carrier_id String?
-  carrier    User?   @relation("CarrierMissions", fields: [carrier_id], references: [id])
+  shipper_id     String
+  shipper        User              @relation("ShipperMissions", fields: [shipper_id], references: [id])
+  carrier_id     String?
+  carrier        User?             @relation("CarrierMissions", fields: [carrier_id], references: [id])
+  timelines      MissionTimeline[]
+  temperature_id String?
+  temperature    Temperature?      @relation(fields: [temperature_id], references: [id])
 
   // Tracking
   tracking_points     TrackingPoint[]
@@ -692,6 +696,36 @@ model Payment {
   carrier    User?   @relation("CarrierPayments", fields: [carrier_id], references: [id])
 
   @@map("payments")
+}
+
+model MissionTimeline {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  event       MissionStatus
+  description String?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  mission_id String
+  mission    Mission @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+
+  @@map("mission_timelines")
+}
+
+model Temperature {
+  id          String  @id @default(cuid())
+  name        String  @unique // e.g., "FROZEN", "REFRIGERATED"
+  min_celsius Float? // optional, e.g., -18
+  max_celsius Float? // optional, e.g., 0
+  description String? // optional description
+  iconUrl     String?
+
+  missions Mission[]
+
+  @@map("temperatures")
 }
 
 // ===== ENUMS =====
