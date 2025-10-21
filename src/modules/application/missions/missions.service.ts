@@ -83,8 +83,10 @@ export class MissionsService {
 
           // Shipment Details
           shipment_type: createMissionDto.shipment_type,
-          temperature_required: createMissionDto.temperature_required,
-
+          // temperature_id: createMissionDto.temperature_id,
+          temperature: {
+            connect: { id: createMissionDto.temperature_id },
+          },
           // Package Dimensions
           package_length: createMissionDto.length_m,
           package_width: createMissionDto.width_m,
@@ -134,6 +136,13 @@ export class MissionsService {
         },
       });
 
+      await this.logTimeline(
+        mission.id,
+        MissionStatus.CREATED,
+        shipperId,
+        'Mission created',
+      );
+
       return {
         success: true,
         message: 'Mission created successfully',
@@ -167,6 +176,7 @@ export class MissionsService {
               completed_missions: true,
             },
           },
+          temperature: true,
         },
         orderBy: {
           created_at: 'desc',
@@ -211,6 +221,15 @@ export class MissionsService {
               average_rating: true,
             },
           },
+          timelines: {
+            select: {
+              id: true,
+              created_at: true,
+              event: true,
+              description: true,
+            },
+          },
+          temperature: true,
         },
         orderBy: {
           created_at: 'desc',
@@ -356,6 +375,7 @@ export class MissionsService {
               created_at: 'asc',
             },
           },
+          temperature: true,
         },
       });
 
@@ -502,6 +522,13 @@ export class MissionsService {
           status: MissionStatus.SEARCHING_CARRIER,
         },
       });
+
+      await this.logTimeline(
+        missionId,
+        MissionStatus.SEARCHING_CARRIER,
+        shipperId,
+        'Shipper confirmed mission and started searching for carrier',
+      );
 
       return {
         success: true,
@@ -690,6 +717,26 @@ export class MissionsService {
         include: { shipper: true, carrier: true },
       });
 
+      const logDescription = `
+Carrier ${updatedMission.carrier.name} (ID: ${carrierId}) confirmed pickup for mission ${mission.id}.
+Uploaded files: ${
+        Object.keys(uploadedFiles).length > 0
+          ? Object.entries(uploadedFiles)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(', ')
+          : 'No files uploaded'
+      }.
+Loading notes: ${pickupData.loading_notes || 'N/A'}.
+Special instructions: ${pickupData.special_instructions || 'N/A'}.
+`;
+
+      await this.logTimeline(
+        mission.id,
+        MissionStatus.PICKUP_CONFIRMED,
+        carrierId,
+        logDescription.trim(),
+      );
+
       const cmrUrl = await this.pdfService.generateCMRPdf(
         updatedMission,
         updatedMission.shipper,
@@ -789,6 +836,13 @@ export class MissionsService {
           data: { status: 'REJECTED' },
         });
 
+        await this.logTimeline(
+          missionId,
+          MissionStatus.ACCEPTED,
+          shipperId,
+          `Shipper selected carrier ${updatedMission.carrier.name} for this mission. Affreightment Confirmation PDF generated: ${pdfUrl}`,
+        );
+
         return {
           success: true,
           message: 'Carrier selected successfully and mission accepted',
@@ -863,6 +917,13 @@ export class MissionsService {
         },
       });
 
+      await this.logTimeline(
+        missionId,
+        MissionStatus.CANCELLED,
+        userId,
+        `Shipper cancelled the mission. All pending or accepted carriers were rejected.`,
+      );
+
       return {
         success: true,
         message: 'Mission cancelled successfully by shipper',
@@ -920,5 +981,21 @@ export class MissionsService {
     // TODO: Implement actual distance calculation using Google Maps API or similar
     // For now, return a mock distance
     return Math.random() * 100 + 10; // Random distance between 10-110 km
+  }
+
+  private async logTimeline(
+    missionId: string,
+    event: MissionStatus,
+    userId?: string,
+    description?: string,
+  ) {
+    await this.prisma.missionTimeline.create({
+      data: {
+        mission_id: missionId,
+        event,
+        user_id: userId || null,
+        description: description || null,
+      },
+    });
   }
 }
