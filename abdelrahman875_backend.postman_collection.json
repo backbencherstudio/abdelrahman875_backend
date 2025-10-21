@@ -117,7 +117,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"email\": \"carrier@gmail.com\",\r\n    \"password\": \"password123\"\r\n\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    // \"email\": \"carrier@gmail.com\",\r\n    // \"password\": \"password123\"\r\n}",
+									"raw": "{\r\n    // \"email\": \"carrier@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    \"email\": \"carrier@gmail.com\",\r\n    \"password\": \"password123\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -820,17 +820,16 @@
 									"name": "assign-code-to-user",
 									"request": {
 										"auth": {
-											"type": "bearer",
-											"bearer": [
-												{
-													"key": "token",
-													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
-													"type": "string"
-												}
-											]
+											"type": "noauth"
 										},
 										"method": "POST",
-										"header": [],
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "{{admin_token}}",
+												"type": "text"
+											}
+										],
 										"body": {
 											"mode": "raw",
 											"raw": "{\r\n  \"code\": \"SAVE20\",\r\n  \"description\": \"20% off on first order\",\r\n  \"discount_type\": \"PERCENTAGE\",\r\n  \"discount_value\": 20,\r\n  \"min_order_amount\": 50,\r\n  \"max_discount\": 100,\r\n  \"usage_limit\": 100,\r\n  \"user_limit\": 1,\r\n  \"valid_from\": \"2024-01-01T00:00:00Z\",\r\n  \"valid_until\": \"2024-12-31T23:59:59Z\",\r\n  \"is_active\": true\r\n}",
@@ -900,17 +899,16 @@
 							"name": "create-promo-code",
 							"request": {
 								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwuY29tIiwic3ViIjoiY21nN3Z4dGlmMDAwZGloa28xaDJ0NnUxdyIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1OTMxNzIwMiwiZXhwIjoxNzU5MzIwODAyfQ.ftiwFmtLgkK0YDpvNDb2IFFmxdYTiThKavXqoQeQWEE",
-											"type": "string"
-										}
-									]
+									"type": "noauth"
 								},
 								"method": "POST",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{admin_token}}",
+										"type": "text"
+									}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\r\n  \"code\": \"SAVE20\",\r\n  \"description\": \"20% off on first order\",\r\n  \"discount_type\": \"PERCENTAGE\",\r\n  \"discount_value\": 20,\r\n  \"min_order_amount\": 50,\r\n  \"max_discount\": 100,\r\n  \"usage_limit\": 100,\r\n  \"user_limit\": 1,\r\n  \"valid_from\": \"2024-01-01T00:00:00Z\",\r\n  \"valid_until\": \"2024-12-31T23:59:59Z\",\r\n  \"is_active\": true\r\n}",
@@ -1133,6 +1131,73 @@
 				{
 					"name": "New Folder",
 					"item": []
+				},
+				{
+					"name": "Temperature-category",
+					"item": [
+						{
+							"name": "create",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{admin_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/C:/Users/user/Pictures/Screenshots/Screenshot 2025-10-21 092128.png",
+											"disabled": true
+										},
+										{
+											"key": "name",
+											"value": "FRIDGED",
+											"type": "text"
+										},
+										{
+											"key": "min_celsius",
+											"value": "0",
+											"type": "text"
+										},
+										{
+											"key": "max_celsius",
+											"value": "8",
+											"type": "text"
+										},
+										{
+											"key": "description",
+											"value": "For fruits, vegetables, and dairy products.",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/temperature-categories",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"temperature-categories"
+									],
+									"query": [
+										{
+											"key": "",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
@@ -1490,7 +1555,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"carrier@gmail.com\",\r\n    \"password\": \"password123\"\r\n\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    // \"email\": \"carrier@gmail.com\",\r\n    // \"password\": \"password123\"\r\n}",
+							"raw": "{\r\n    // \"email\": \"carrier@gmail.com\",\r\n    // \"password\": \"password123\"\r\n\r\n    \"email\": \"admin@gmail.com\",\r\n    \"password\": \"password123\"\r\n\r\n//     \"email\": \"carrier@gmail.com\",\r\n//     \"password\": \"password123\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1917,15 +1982,104 @@
 									"formdata": []
 								},
 								"url": {
-									"raw": "{{endpoint2}}/api/missions/cmgugu0gc0000uox0j1pqstdx/accept",
+									"raw": "{{endpoint2}}/api/missions/cmgyk2wl60000uobk1cugd4ws/accept",
 									"host": [
 										"{{endpoint2}}"
 									],
 									"path": [
 										"api",
 										"missions",
-										"cmgugu0gc0000uox0j1pqstdx",
+										"cmgyk2wl60000uobk1cugd4ws",
 										"accept"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "confirm-pickup",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{carrier_token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "pickup_photo",
+											"type": "file",
+											"src": "/C:/Users/user/Pictures/Screenshots/Screenshot 2025-10-21 081501.png"
+										},
+										{
+											"key": "pickup_signature",
+											"type": "file",
+											"src": "/C:/Users/user/Pictures/Screenshots/Screenshot 2025-10-21 081501.png"
+										},
+										{
+											"key": "loading_notes",
+											"value": "Checked all parcels, no visible damage. Fragile items handled carefully.",
+											"type": "text"
+										},
+										{
+											"key": "special_instructions",
+											"value": "Keep temperature below 5°C during transit.",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmgzzsr3d0000uoagadel1d71/confirm-pickup",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmgzzsr3d0000uoagadel1d71",
+										"confirm-pickup"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Cancel missions",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{carrier_token}}",
+										"type": "text",
+										"disabled": true
+									},
+									{
+										"key": "Authorization",
+										"value": "{{shipper_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{endpoint2}}/api/missions/cmgzzsr3d0000uoagadel1d71/cancel-mission",
+									"host": [
+										"{{endpoint2}}"
+									],
+									"path": [
+										"api",
+										"missions",
+										"cmgzzsr3d0000uoagadel1d71",
+										"cancel-mission"
 									]
 								}
 							},
@@ -1992,7 +2146,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"shipment_type\": \"FREIGHT\",\r\n  \r\n  \"loading_location\": \"Lyon\",\r\n  \"loading_address\": \"12 rue des Lilas\",\r\n  \"loading_city\": \"Lyon\", \r\n  \"loading_postal_code\": \"69000\",\r\n  \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n  \"loading_date\": \"2025-09-12\",\r\n  \"loading_time\": \"13h20\",\r\n  \"loading_instructions\": \"Ne pas jeter le colis\",\r\n  \"loading_staff_name\": \"UPS\",\r\n  \r\n  \"goods_type\": \"Fresh Products\",\r\n  \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n  \"length_m\": 1.2,\r\n  \"width_m\": 0.8,\r\n  \"height_m\": 0.6,\r\n  \"weight_kg\": 7,\r\n  \"volume_m3\": 0.576,\r\n  \"fragile\": false,\r\n  \r\n  \"delivery_location\": \"Toulouse\",\r\n  \"delivery_address\": \"12 rue des Lilas\",\r\n  \"delivery_city\": \"Toulouse\",\r\n  \"delivery_postal_code\": \"69000\",\r\n  \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n  \"delivery_date\": \"2025-09-18\",\r\n  \"delivery_time\": \"11h20\",\r\n  \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n  \"recipient_name\": \"UPS\",\r\n  \"delivery_message\": \"Please ring before entering\",\r\n  \"distance_km\": 245.5\r\n}",
+									"raw": "{\r\n    \"shipment_type\": \"FREIGHT\",\r\n    \"loading_location\": \"Lyon\",\r\n    \"loading_address\": \"12 rue des Lilas\",\r\n    \"loading_city\": \"Lyon\",\r\n    \"loading_postal_code\": \"69000\",\r\n    \"shipper_phone\": \"+33 6 59 97 12 13\",\r\n    \"loading_date\": \"2025-09-12\",\r\n    \"loading_time\": \"13h20\",\r\n    \"loading_instructions\": \"Ne pas jeter le colis\",\r\n    \"loading_staff_name\": \"UPS\",\r\n    \"goods_type\": \"Fresh Products\",\r\n    //   \"temperature_required\": \"REFRIGERATED\",  // ✅ Use enum value\r\n    \"temperature_id\": \"cmh02hodf0000uoake2uvzu7s\",\r\n    \"length_m\": 1.2,\r\n    \"width_m\": 0.8,\r\n    \"height_m\": 0.6,\r\n    \"weight_kg\": 7,\r\n    \"volume_m3\": 0.576,\r\n    \"fragile\": false,\r\n    \"delivery_location\": \"Toulouse\",\r\n    \"delivery_address\": \"12 rue des Lilas\",\r\n    \"delivery_city\": \"Toulouse\",\r\n    \"delivery_postal_code\": \"69000\",\r\n    \"recipient_phone\": \"+33 6 59 97 12 13\",\r\n    \"delivery_date\": \"2025-09-18\",\r\n    \"delivery_time\": \"11h20\",\r\n    \"delivery_instructions\": \"Ne pas jeter le colis\",\r\n    \"recipient_name\": \"UPS\",\r\n    \"delivery_message\": \"Please ring before entering\",\r\n    \"distance_km\": 245.5\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2039,14 +2193,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{endpoint2}}/api/missions/cmguca81v000yuosoth3drmkh/accepted-carriers",
+									"raw": "{{endpoint2}}/api/missions/cmgx6gve60000uo8c1e0092a1/accepted-carriers",
 									"host": [
 										"{{endpoint2}}"
 									],
 									"path": [
 										"api",
 										"missions",
-										"cmguca81v000yuosoth3drmkh",
+										"cmgx6gve60000uo8c1e0092a1",
 										"accepted-carriers"
 									]
 								}
@@ -2077,14 +2231,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{endpoint2}}/api/missions/cmgugu0gc0000uox0j1pqstdx/select-carrier",
+									"raw": "{{endpoint2}}/api/missions/cmgx6gve60000uo8c1e0092a1/select-carrier",
 									"host": [
 										"{{endpoint2}}"
 									],
 									"path": [
 										"api",
 										"missions",
-										"cmgugu0gc0000uox0j1pqstdx",
+										"cmgx6gve60000uo8c1e0092a1",
 										"select-carrier"
 									]
 								}
@@ -2154,14 +2308,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{endpoint2}}/api/missions/cmgugu0gc0000uox0j1pqstdx/confirm",
+									"raw": "{{endpoint2}}/api/missions/cmgx6gve60000uo8c1e0092a1/confirm",
 									"host": [
 										"{{endpoint2}}"
 									],
 									"path": [
 										"api",
 										"missions",
-										"cmgugu0gc0000uox0j1pqstdx",
+										"cmgx6gve60000uo8c1e0092a1",
 										"confirm"
 									]
 								}
@@ -2172,17 +2326,16 @@
 							"name": "get-missions",
 							"request": {
 								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNoaXBwZXJAbWFpbC5jb20iLCJzdWIiOiJjbWc3dmowZ2UwMDAwaWhrb3N0cmM4bWM0IiwidHlwZSI6InNoaXBwZXIiLCJpYXQiOjE3NTkzMTY5NjksImV4cCI6MTc1OTMyMDU2OX0.Oez4Y3w4JhcqBHYjI9RMMcEFeMUKN69Fg2gDXB0sWmY",
-											"type": "string"
-										}
-									]
+									"type": "noauth"
 								},
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{shipper_token}}",
+										"type": "text"
+									}
+								],
 								"url": {
 									"raw": "{{endpoint2}}/api/missions/my-missions",
 									"host": [

@@ -101,8 +101,8 @@ export class PdfService {
       `Dimensions: ${mission.package_length}m × ${mission.package_width}m × ${mission.package_height}m`,
     );
     if (mission.fragile) doc.text(`⚠️ Fragile goods`);
-    if (mission.temperature_required)
-      doc.text(`Temperature Required: ${mission.temperature_required}`);
+    // if (mission.temperature_required)
+    //   doc.text(`Temperature Required: ${mission.temperature_required}`);
     doc.moveDown(1.5);
 
     // Financials
