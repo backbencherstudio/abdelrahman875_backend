@@ -79,7 +79,7 @@ export class UserRepository {
    * @param param0
    * @returns
    */
-  static async createSuAdminUser({ username, email, password }) {
+  static async createSystemAdminUser({ username, email, password }) {
     try {
       password = await bcrypt.hash(password, appConfig().security.salt);
 
@@ -88,7 +88,8 @@ export class UserRepository {
           username: username,
           email: email,
           password: password,
-          type: 'su_admin',
+          type: 'system_admin',
+          status: 1,
         },
       });
       return user;

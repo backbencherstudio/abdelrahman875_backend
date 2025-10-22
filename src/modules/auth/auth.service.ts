@@ -194,7 +194,11 @@ export class AuthService {
         }
 
         // Check application status (skip for admin accounts)
-        if (user.type !== 'admin' && user.application_status !== 'APPROVED') {
+        if (
+          user.type !== 'admin' &&
+          user.type !== 'system_admin' &&
+          user.application_status !== 'APPROVED'
+        ) {
           if (user.application_status === 'PENDING') {
             throw new UnauthorizedException(
               'Your account is pending approval. Please wait for admin review.',
