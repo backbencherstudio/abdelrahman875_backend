@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import * as serviceAccount from './firebase-service-account.json';
+import appConfig from 'src/config/app.config';
+
+const firebaseConfig = appConfig().firebaseConfig;
 
 @Injectable()
 export class FirebaseService {
   constructor() {
     if (!admin.apps.length) {
       admin.initializeApp({
-        credential: admin.credential.cert(
-          serviceAccount as admin.ServiceAccount,
-        ),
+        credential: admin.credential.cert(firebaseConfig),
       });
     }
   }
