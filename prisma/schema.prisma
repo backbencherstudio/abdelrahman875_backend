@@ -68,6 +68,12 @@ model User {
   is_two_factor_enabled Int?    @default(0)
   two_factor_secret     String? // secret key for two factor authentication
 
+  // firebase cloud messaging token for push notifications
+  fcm_token String?
+  platform  String? // 'ios' | 'android'
+
+  last_active DateTime @default(now())
+
   accounts                  Account[]
   creator_conversations     Conversation[] @relation("creator")
   participant_conversations Conversation[] @relation("participant")
@@ -542,14 +548,14 @@ model Mission {
   pickup_contact_name  String
 
   // Goods Information
-  goods_type           String
+  goods_type     String
   // temperature_required TemperatureRange? // Predefined temperature range
   // Package Dimensions
-  package_length       Float? // meters
-  package_width        Float? // meters
-  package_height       Float?
-  volume_m3            Float
-  weight_kg            Float
+  package_length Float? // meters
+  package_width  Float? // meters
+  package_height Float?
+  volume_m3      Float
+  weight_kg      Float
 
   // Delivery Information
   delivery_lat           Float?

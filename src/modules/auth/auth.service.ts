@@ -23,7 +23,7 @@ export class AuthService {
     private prisma: PrismaService,
     private mailService: MailService,
     @InjectRedis() private readonly redis: Redis,
-  ) { }
+  ) {}
 
   async me(userId: string) {
     try {
@@ -188,17 +188,25 @@ export class AuthService {
       if (_isValidPassword) {
         // Check account status
         if (user.status !== 1) {
-          throw new UnauthorizedException('Account is disabled by admin. Please contact support.');
+          throw new UnauthorizedException(
+            'Account is disabled by admin. Please contact support.',
+          );
         }
-        
+
         // Check application status (skip for admin accounts)
         if (user.type !== 'admin' && user.application_status !== 'APPROVED') {
           if (user.application_status === 'PENDING') {
-            throw new UnauthorizedException('Your account is pending approval. Please wait for admin review.');
+            throw new UnauthorizedException(
+              'Your account is pending approval. Please wait for admin review.',
+            );
           } else if (user.application_status === 'UNDER_REVIEW') {
-            throw new UnauthorizedException('Your account is under review. Please wait for admin decision.');
+            throw new UnauthorizedException(
+              'Your account is under review. Please wait for admin decision.',
+            );
           } else if (user.application_status === 'REJECTED') {
-            throw new UnauthorizedException('Your account has been rejected. Please contact support for more information.');
+            throw new UnauthorizedException(
+              'Your account has been rejected. Please contact support for more information.',
+            );
           }
         }
 
@@ -254,6 +262,11 @@ export class AuthService {
         60 * 60 * 24 * 7, // 7 days in seconds
       );
 
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { last_active: new Date() },
+      });
+
       return {
         success: true,
         message: 'Logged in successfully',
@@ -298,7 +311,11 @@ export class AuthService {
         };
       }
 
-      const payload = { email: userDetails.email, sub: userDetails.id, type: userDetails.type };
+      const payload = {
+        email: userDetails.email,
+        sub: userDetails.id,
+        type: userDetails.type,
+      };
       const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
       return {
@@ -347,6 +364,8 @@ export class AuthService {
     email,
     password,
     type,
+    fcm_token,
+    platform,
   }: {
     name?: string;
     first_name: string;
@@ -354,6 +373,8 @@ export class AuthService {
     email: string;
     password: string;
     type: string;
+    fcm_token?: string;
+    platform?: 'ios' | 'android';
   }) {
     try {
       // Check if email already exist
@@ -375,14 +396,15 @@ export class AuthService {
         last_name: last_name,
         email: email,
         password: password,
-        type: type
+        type: type,
+        fcm_token,
+        platform,
       });
-
 
       if (user && user.success) {
         await this.prisma.user.update({
           where: { id: user.data.id },
-          data: { status: 0 }
+          data: { status: 0 },
         });
       }
       if (user == null && user.success == false) {

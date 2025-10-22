@@ -4,10 +4,61 @@ import { SojebStorage } from '../../../common/lib/Disk/SojebStorage';
 import appConfig from '../../../config/app.config';
 import { UserRepository } from '../../../common/repository/user/user.repository';
 import { Role } from '../../../common/guard/role/role.enum';
+import { FirebaseService } from 'src/modules/firebase/firebase.service';
 
 @Injectable()
 export class NotificationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly firebaseService: FirebaseService,
+  ) {}
+
+  async createNotification({
+    sender_id,
+    receiver_id,
+    text,
+    type,
+    entity_id,
+  }: {
+    sender_id?: string;
+    receiver_id?: string;
+    text: string;
+    type?: string;
+    entity_id?: string;
+  }) {
+    const notificationEvent = await this.prisma.notificationEvent.create({
+      data: { type, text },
+    });
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        sender_id,
+        receiver_id,
+        entity_id,
+        notification_event_id: notificationEvent.id,
+      },
+      include: {
+        receiver: { select: { id: true, name: true, fcm_token: true } },
+        sender: true,
+        notification_event: true,
+      },
+    });
+
+    if (receiver_id && notification.receiver?.fcm_token) {
+      try {
+        await this.firebaseService.sendPushNotification(
+          notification.receiver.fcm_token,
+          'New Notification',
+          text,
+          { type, entity_id },
+        );
+      } catch (err) {
+        console.error('Firebase push error:', err.message);
+      }
+    }
+
+    return notification;
+  }
 
   async findAll(user_id: string) {
     try {
