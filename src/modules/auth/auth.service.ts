@@ -187,6 +187,7 @@ export class AuthService {
       });
       if (_isValidPassword) {
         // Check account status
+        console.log(user.status);
         if (user.status !== 1) {
           throw new UnauthorizedException(
             'Account is disabled by admin. Please contact support.',
@@ -591,6 +592,7 @@ export class AuthService {
               id: user.id,
             },
             data: {
+              status: 1,
               email_verified_at: new Date(Date.now()),
             },
           });

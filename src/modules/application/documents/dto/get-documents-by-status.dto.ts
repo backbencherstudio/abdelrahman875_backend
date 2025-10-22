@@ -9,7 +9,10 @@ export enum DocumentStatusQueryEnum {
 }
 
 export class GetDocumentsByStatusDto {
-  @ApiProperty({ enum: DocumentStatusQueryEnum, description: 'Document status to filter by' })
+  @ApiProperty({
+    enum: DocumentStatusQueryEnum,
+    description: 'Document status to filter by',
+  })
   @IsEnum(DocumentStatusQueryEnum)
   status: DocumentStatusQueryEnum;
 }

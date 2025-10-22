@@ -11,7 +11,10 @@ export class ReviewDocumentDto {
   @IsEnum(DocumentStatusEnum)
   status: DocumentStatusEnum;
 
-  @ApiProperty({ required: false, description: 'Rejection reason if status is REJECTED' })
+  @ApiProperty({
+    required: false,
+    description: 'Rejection reason if status is REJECTED',
+  })
   @IsOptional()
   @IsString()
   rejection_reason?: string;

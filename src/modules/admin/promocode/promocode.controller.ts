@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
-  UseGuards 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { PromoCodeService } from './promocode.service';
 import { CreatePromoCodeDto } from './dto/create-promocode.dto';
@@ -44,9 +44,10 @@ export class PromoCodeController {
   @ApiResponse({ description: 'Get all promo codes with optional filtering' })
   @Get()
   async findAll(
-    @Query() query: { 
-      q?: string; 
-      is_active?: string; 
+    @Query()
+    query: {
+      q?: string;
+      is_active?: string;
       discount_type?: string;
       page?: string;
       limit?: string;
@@ -65,15 +66,21 @@ export class PromoCodeController {
 
   @ApiResponse({ description: 'Assign promo code to specific users' })
   @Post(':id/assign')
-  async assignToUsers(@Param('id') id: string, @Body() body: { 
-    user_ids: string[] }) {
+  async assignToUsers(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      user_ids: string[];
+    },
+  ) {
     try {
       // assignPromoCodeDto.promo_code_id = id;
       const assignPromoCodeDto: AssignPromoCodeDto = {
         promo_code_id: id,
-        user_ids: body.user_ids
-        };
-      const result = await this.promoCodeService.assignToUsers(assignPromoCodeDto);
+        user_ids: body.user_ids,
+      };
+      const result =
+        await this.promoCodeService.assignToUsers(assignPromoCodeDto);
       return result;
     } catch (error) {
       return {
@@ -86,11 +93,14 @@ export class PromoCodeController {
   @ApiResponse({ description: 'Remove promo code from specific users' })
   @Delete(':id/users')
   async removeFromUsers(
-    @Param('id') id: string, 
-    @Body() body: { user_ids: string[] }
+    @Param('id') id: string,
+    @Body() body: { user_ids: string[] },
   ) {
     try {
-      const result = await this.promoCodeService.removeFromUsers(id, body.user_ids);
+      const result = await this.promoCodeService.removeFromUsers(
+        id,
+        body.user_ids,
+      );
       return result;
     } catch (error) {
       return {
@@ -130,7 +140,10 @@ export class PromoCodeController {
 
   @ApiResponse({ description: 'Update a promo code' })
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updatePromoCodeDto: UpdatePromoCodeDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updatePromoCodeDto: UpdatePromoCodeDto,
+  ) {
     try {
       const result = await this.promoCodeService.update(id, updatePromoCodeDto);
       return result;

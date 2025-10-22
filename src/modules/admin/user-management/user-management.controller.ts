@@ -44,9 +44,7 @@ export class UserManagementController {
 
   @ApiResponse({ description: 'Get all carrier profiles' })
   @Get('carriers')
-  async getAllCarriers(
-    @Query() query: { q?: string; status?: string },
-  ) {
+  async getAllCarriers(@Query() query: { q?: string; status?: string }) {
     try {
       const result = await this.userManagementService.getAllCarriers(query);
       return result;
@@ -60,9 +58,7 @@ export class UserManagementController {
 
   @ApiResponse({ description: 'Get all shipper profiles' })
   @Get('shippers')
-  async getAllShippers(
-    @Query() query: { q?: string; status?: string },
-  ) {
+  async getAllShippers(@Query() query: { q?: string; status?: string }) {
     try {
       const result = await this.userManagementService.getAllShippers(query);
       return result;
