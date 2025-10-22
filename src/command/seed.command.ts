@@ -17,15 +17,14 @@ export class SeedCommand extends CommandRunner {
 
   async seed(param: string[]) {
     try {
-      console.log(`Prisma Env: ${process.env.PRISMA_ENV}`);
       console.log('Seeding started...');
 
       // begin transaaction
       await this.prisma.$transaction(async ($tx) => {
-        await this.roleSeed();
-        await this.permissionSeed();
+        // await this.roleSeed();
+        // await this.permissionSeed();
         await this.userSeed();
-        await this.permissionRoleSeed();
+        // await this.permissionRoleSeed();
       });
 
       console.log('Seeding done.');
@@ -36,19 +35,28 @@ export class SeedCommand extends CommandRunner {
 
   //---- user section ----
   async userSeed() {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: appConfig().defaultUser.system.email },
+    });
+
+    if (existingUser) {
+      console.log('Super admin already exists. Skipping creation.');
+      return;
+    }
+
     // system admin, user id: 1
-    const systemUser = await UserRepository.createSuAdminUser({
+    const systemUser = await UserRepository.createSystemAdminUser({
       username: appConfig().defaultUser.system.username,
       email: appConfig().defaultUser.system.email,
       password: appConfig().defaultUser.system.password,
     });
 
-    await this.prisma.roleUser.create({
-      data: {
-        user_id: systemUser.id,
-        role_id: '1',
-      },
-    });
+    // await this.prisma.roleUser.create({
+    //   data: {
+    //     user_id: systemUser.id,
+    //     role_id: '1',
+    //   },
+    // });
   }
 
   async permissionSeed() {
