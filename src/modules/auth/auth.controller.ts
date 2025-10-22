@@ -13,7 +13,12 @@ import {
   UseInterceptors,
   UploadedFiles,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { memoryStorage } from 'multer';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
@@ -68,6 +73,8 @@ export class AuthController {
       const email = data.email;
       const password = data.password;
       const type = data.type;
+      const fcm_token = data.fcm_token;
+      const platform = data.platform;
 
       // if (!name) {
       //   throw new HttpException('Name not provided', HttpStatus.UNAUTHORIZED);
@@ -101,6 +108,8 @@ export class AuthController {
         email: email,
         password: password,
         type: type,
+        fcm_token,
+        platform,
       });
 
       return response;
@@ -136,6 +145,8 @@ export class AuthController {
         password,
         type,
         document_types,
+        fcm_token,
+        platform,
       } = data;
 
       // Validate required fields
@@ -161,7 +172,10 @@ export class AuthController {
         );
       }
       if (!type) {
-        throw new HttpException('User type not provided', HttpStatus.UNAUTHORIZED);
+        throw new HttpException(
+          'User type not provided',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       // Register the user first
@@ -172,6 +186,8 @@ export class AuthController {
         email: email,
         password: password,
         type: type,
+        fcm_token,
+        platform,
       });
 
       if (!registerResponse.success) {
@@ -181,11 +197,11 @@ export class AuthController {
       // If documents are provided, upload them
       if (files && files.length > 0 && document_types) {
         const documentTypesArray = JSON.parse(document_types);
-        
+
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           const documentType = documentTypesArray[i] as DocumentType;
-          
+
           if (file && documentType) {
             await this.documentsService.uploadDocument(
               (registerResponse as any).data?.id || '',
@@ -198,7 +214,8 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Registration completed successfully. Documents uploaded for admin review.',
+        message:
+          'Registration completed successfully. Documents uploaded for admin review.',
         data: (registerResponse as any).data,
       };
     } catch (error) {
@@ -237,6 +254,8 @@ export class AuthController {
         associated_users,
         email,
         password,
+        fcm_token,
+        platform,
       } = data;
 
       // Validate required fields for shipper
@@ -248,7 +267,7 @@ export class AuthController {
         country: 'Country',
         address: 'Address',
         email: 'Email',
-        password: 'Password'
+        password: 'Password',
       };
 
       const missingFields = [];
@@ -265,8 +284,12 @@ export class AuthController {
           data: {
             missingFields: missingFields,
             requiredFields: Object.values(requiredFields),
-            optionalFields: ['Company name', 'Sector', 'Number of associated users']
-          }
+            optionalFields: [
+              'Company name',
+              'Sector',
+              'Number of associated users',
+            ],
+          },
         };
       }
 
@@ -278,6 +301,8 @@ export class AuthController {
         email: email,
         password: password,
         type: 'shipper',
+        fcm_token,
+        platform,
       });
 
       if (!registerResponse.success) {
@@ -305,8 +330,10 @@ export class AuthController {
             data: {
               requiredDocuments: requiredDocuments,
               providedDocuments: files ? files.length : 0,
-              missingDocuments: requiredDocuments.slice(files ? files.length : 0)
-            }
+              missingDocuments: requiredDocuments.slice(
+                files ? files.length : 0,
+              ),
+            },
           };
         }
 
@@ -322,15 +349,19 @@ export class AuthController {
           // Define required document types for shippers in order
           const shipperDocumentTypes: DocumentType[] = [
             'ID_CARD',
-            'KBIS', 
+            'KBIS',
             'PROFILE_PHOTO',
-            'RIB'
+            'RIB',
           ];
-          
-          for (let i = 0; i < files.length && i < shipperDocumentTypes.length; i++) {
+
+          for (
+            let i = 0;
+            i < files.length && i < shipperDocumentTypes.length;
+            i++
+          ) {
             const file = files[i];
             const documentType = shipperDocumentTypes[i];
-            
+
             if (file && documentType) {
               await this.documentsService.uploadDocument(
                 userId,
@@ -344,7 +375,8 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Shipper registration completed successfully. We have sent a verification link to your email.',
+        message:
+          'Shipper registration completed successfully. We have sent a verification link to your email.',
         data: {
           user_id: userId,
           user_type: 'shipper',
@@ -395,6 +427,8 @@ export class AuthController {
         volume_m3,
         payload_capacity,
         pallets_accepted,
+        fcm_token,
+        platform,
       } = data;
 
       // Validate required fields for carrier
@@ -412,7 +446,7 @@ export class AuthController {
         license_plate: 'License plate',
         year_of_registration: 'Year of registration',
         payload_capacity: 'Payload capacity',
-        volume_m3: 'Volume (m³)'
+        volume_m3: 'Volume (m³)',
       };
 
       const missingFields = [];
@@ -429,8 +463,14 @@ export class AuthController {
           data: {
             missingFields: missingFields,
             requiredFields: Object.values(requiredFields),
-            optionalFields: ['Company name', 'Sector', 'Number of associated users', 'Loading dimensions', 'Pallets accepted']
-          }
+            optionalFields: [
+              'Company name',
+              'Sector',
+              'Number of associated users',
+              'Loading dimensions',
+              'Pallets accepted',
+            ],
+          },
         };
       }
 
@@ -442,6 +482,8 @@ export class AuthController {
         email: email,
         password: password,
         type: 'carrier',
+        fcm_token,
+        platform,
       });
 
       if (!registerResponse.success) {
@@ -459,7 +501,14 @@ export class AuthController {
         });
 
         // Validate that all required documents are provided for carrier
-        const requiredDocuments = ['ID_CARD', 'KBIS', 'DRIVING_LICENSE', 'TRANSPORT_LICENSE', 'INSURANCE_CERTIFICATE', 'PROFILE_PHOTO'];
+        const requiredDocuments = [
+          'ID_CARD',
+          'KBIS',
+          'DRIVING_LICENSE',
+          'TRANSPORT_LICENSE',
+          'INSURANCE_CERTIFICATE',
+          'PROFILE_PHOTO',
+        ];
         if (!files || files.length < requiredDocuments.length) {
           // Delete the user if documents are missing
           await this.prisma.user.delete({ where: { id: userId } });
@@ -469,8 +518,10 @@ export class AuthController {
             data: {
               requiredDocuments: requiredDocuments,
               providedDocuments: files ? files.length : 0,
-              missingDocuments: requiredDocuments.slice(files ? files.length : 0)
-            }
+              missingDocuments: requiredDocuments.slice(
+                files ? files.length : 0,
+              ),
+            },
           };
         }
 
@@ -487,10 +538,16 @@ export class AuthController {
             data: {
               type: vehicle_type.toUpperCase() as any, // Convert to VehicleType enum
               make: make_model ? make_model.split(' ')[0] : null,
-              model: make_model ? make_model.split(' ').slice(1).join(' ') : null,
-              year: year_of_registration ? parseInt(year_of_registration) : null,
+              model: make_model
+                ? make_model.split(' ').slice(1).join(' ')
+                : null,
+              year: year_of_registration
+                ? parseInt(year_of_registration)
+                : null,
               license_plate: license_plate,
-              capacity_kg: payload_capacity ? parseFloat(payload_capacity) : null,
+              capacity_kg: payload_capacity
+                ? parseFloat(payload_capacity)
+                : null,
               capacity_m3: volume_m3 ? parseFloat(volume_m3) : null,
               photos: [], // No photos uploaded during registration
               carrier_id: userId,
@@ -517,13 +574,17 @@ export class AuthController {
             'DRIVING_LICENSE',
             'TRANSPORT_LICENSE',
             'INSURANCE_CERTIFICATE',
-            'PROFILE_PHOTO'
+            'PROFILE_PHOTO',
           ];
-          
-          for (let i = 0; i < files.length && i < carrierDocumentTypes.length; i++) {
+
+          for (
+            let i = 0;
+            i < files.length && i < carrierDocumentTypes.length;
+            i++
+          ) {
             const file = files[i];
             const documentType = carrierDocumentTypes[i];
-            
+
             if (file && documentType) {
               await this.documentsService.uploadDocument(
                 userId,
@@ -537,7 +598,8 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Carrier registration completed successfully. We have sent a verification link to your email.',
+        message:
+          'Carrier registration completed successfully. We have sent a verification link to your email.',
         data: {
           user_id: userId,
           user_type: 'carrier',
@@ -552,7 +614,9 @@ export class AuthController {
     }
   }
 
-  @ApiOperation({ summary: 'Complete Carrier Profile After Email Verification' })
+  @ApiOperation({
+    summary: 'Complete Carrier Profile After Email Verification',
+  })
   @Post('complete-carrier-profile')
   @UseInterceptors(
     FilesInterceptor('documents', 10, {
@@ -601,7 +665,7 @@ export class AuthController {
         license_plate: 'License plate',
         year_of_registration: 'Year of registration',
         payload_capacity: 'Payload capacity',
-        volume_m3: 'Volume (m³)'
+        volume_m3: 'Volume (m³)',
       };
 
       const missingFields = [];
@@ -618,8 +682,14 @@ export class AuthController {
           data: {
             missingFields: missingFields,
             requiredFields: Object.values(requiredFields),
-            optionalFields: ['Company name', 'Sector', 'Number of associated users', 'Loading dimensions', 'Pallets accepted']
-          }
+            optionalFields: [
+              'Company name',
+              'Sector',
+              'Number of associated users',
+              'Loading dimensions',
+              'Pallets accepted',
+            ],
+          },
         };
       }
 
@@ -641,7 +711,14 @@ export class AuthController {
       });
 
       // Validate that all required documents are provided for carrier
-      const requiredDocuments = ['ID_CARD', 'KBIS', 'DRIVING_LICENSE', 'TRANSPORT_LICENSE', 'INSURANCE_CERTIFICATE', 'PROFILE_PHOTO'];
+      const requiredDocuments = [
+        'ID_CARD',
+        'KBIS',
+        'DRIVING_LICENSE',
+        'TRANSPORT_LICENSE',
+        'INSURANCE_CERTIFICATE',
+        'PROFILE_PHOTO',
+      ];
       if (!files || files.length < requiredDocuments.length) {
         return {
           success: false,
@@ -649,8 +726,8 @@ export class AuthController {
           data: {
             requiredDocuments: requiredDocuments,
             providedDocuments: files ? files.length : 0,
-            missingDocuments: requiredDocuments.slice(files ? files.length : 0)
-          }
+            missingDocuments: requiredDocuments.slice(files ? files.length : 0),
+          },
         };
       }
 
@@ -680,13 +757,17 @@ export class AuthController {
           'DRIVING_LICENSE',
           'TRANSPORT_LICENSE',
           'INSURANCE_CERTIFICATE',
-          'PROFILE_PHOTO'
+          'PROFILE_PHOTO',
         ];
-        
-        for (let i = 0; i < files.length && i < carrierDocumentTypes.length; i++) {
+
+        for (
+          let i = 0;
+          i < files.length && i < carrierDocumentTypes.length;
+          i++
+        ) {
           const file = files[i];
           const documentType = carrierDocumentTypes[i];
-          
+
           if (file && documentType) {
             await this.documentsService.uploadDocument(
               existingUser.id,
@@ -713,7 +794,9 @@ export class AuthController {
     }
   }
 
-  @ApiOperation({ summary: 'Complete Shipper Profile After Email Verification' })
+  @ApiOperation({
+    summary: 'Complete Shipper Profile After Email Verification',
+  })
   @Post('complete-shipper-profile')
   @UseInterceptors(
     FilesInterceptor('documents', 10, {
@@ -750,7 +833,7 @@ export class AuthController {
         date_of_birth: 'Date of birth',
         phone_number: 'Phone number',
         country: 'Country',
-        address: 'Address'
+        address: 'Address',
       };
 
       const missingFields = [];
@@ -767,8 +850,12 @@ export class AuthController {
           data: {
             missingFields: missingFields,
             requiredFields: Object.values(requiredFields),
-            optionalFields: ['Company name', 'Sector', 'Number of associated users']
-          }
+            optionalFields: [
+              'Company name',
+              'Sector',
+              'Number of associated users',
+            ],
+          },
         };
       }
 
@@ -798,8 +885,8 @@ export class AuthController {
           data: {
             requiredDocuments: requiredDocuments,
             providedDocuments: files ? files.length : 0,
-            missingDocuments: requiredDocuments.slice(files ? files.length : 0)
-          }
+            missingDocuments: requiredDocuments.slice(files ? files.length : 0),
+          },
         };
       }
 
@@ -809,15 +896,19 @@ export class AuthController {
       if (files && files.length > 0) {
         const shipperDocumentTypes: DocumentType[] = [
           'ID_CARD',
-          'KBIS', 
+          'KBIS',
           'PROFILE_PHOTO',
-          'RIB'
+          'RIB',
         ];
-        
-        for (let i = 0; i < files.length && i < shipperDocumentTypes.length; i++) {
+
+        for (
+          let i = 0;
+          i < files.length && i < shipperDocumentTypes.length;
+          i++
+        ) {
           const file = files[i];
           const documentType = shipperDocumentTypes[i];
-          
+
           if (file && documentType) {
             await this.documentsService.uploadDocument(
               existingUser.id,

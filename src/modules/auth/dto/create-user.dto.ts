@@ -28,4 +28,7 @@ export class CreateUserDto {
     example: 'user',
   })
   type?: string;
+
+  fcm_token?: string; // optional
+  platform?: 'ios' | 'android';
 }

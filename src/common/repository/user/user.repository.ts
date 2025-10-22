@@ -198,6 +198,8 @@ export class UserRepository {
     phone_number,
     role_id = null,
     type = 'user',
+    fcm_token,
+    platform,
   }: {
     name?: string;
     first_name?: string;
@@ -207,6 +209,8 @@ export class UserRepository {
     phone_number?: string;
     role_id?: string;
     type?: string;
+    fcm_token?: string;
+    platform?: 'ios' | 'android';
   }) {
     try {
       const data = {};
@@ -257,6 +261,8 @@ export class UserRepository {
         data: {
           ...data,
           application_status: type === 'admin' ? 'APPROVED' : 'PENDING', // Admin accounts are auto-approved
+          fcm_token,
+          platform,
         },
       });
 
