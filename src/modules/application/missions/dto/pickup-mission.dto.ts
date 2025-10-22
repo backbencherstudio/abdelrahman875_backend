@@ -7,7 +7,10 @@ export class ConfirmPickupDto {
   @IsString()
   loading_notes?: string;
 
-  @ApiProperty({ description: 'Special instructions at pickup', required: false })
+  @ApiProperty({
+    description: 'Special instructions at pickup',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   special_instructions?: string;

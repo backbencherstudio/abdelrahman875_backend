@@ -64,7 +64,10 @@ export class UserController {
   @Roles(Role.ADMIN)
   @ApiResponse({ description: 'Approve a user' })
   @Post(':id/approve')
-  async approve(@Param('id') id: string, @Body() body?: { approval_notes?: string }) {
+  async approve(
+    @Param('id') id: string,
+    @Body() body?: { approval_notes?: string },
+  ) {
     try {
       const user = await this.userService.approve(id, body?.approval_notes);
       return user;
@@ -80,7 +83,10 @@ export class UserController {
   @Roles(Role.ADMIN)
   @ApiResponse({ description: 'Reject a user' })
   @Post(':id/reject')
-  async reject(@Param('id') id: string, @Body() body?: { rejection_reason?: string }) {
+  async reject(
+    @Param('id') id: string,
+    @Body() body?: { rejection_reason?: string },
+  ) {
     try {
       const user = await this.userService.reject(id, body?.rejection_reason);
       return user;

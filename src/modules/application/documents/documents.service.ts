@@ -151,7 +151,7 @@ export class DocumentsService {
       // Group documents by user
       const groupedByUser = documents.reduce((acc, doc) => {
         const userId = doc.user.id;
-        
+
         if (!acc[userId]) {
           acc[userId] = {
             user: {
@@ -159,19 +159,25 @@ export class DocumentsService {
               name: `${doc.user.first_name} ${doc.user.last_name}`,
               email: doc.user.email,
               type: doc.user.type,
-              avatar: doc.user.avatar ? SojebStorage.url(appConfig().storageUrl.avatar + doc.user.avatar) : null,
+              avatar: doc.user.avatar
+                ? SojebStorage.url(
+                    appConfig().storageUrl.avatar + doc.user.avatar,
+                  )
+                : null,
             },
-            documents: []
+            documents: [],
           };
         }
-        
+
         // Add document with full URL
         acc[userId].documents.push({
           id: doc.id,
           created_at: doc.created_at,
           updated_at: doc.updated_at,
           type: doc.type,
-          file_url: SojebStorage.url(appConfig().storageUrl.documents + doc.file_url),
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.documents + doc.file_url,
+          ),
           file_name: doc.file_name,
           file_size: doc.file_size,
           status: doc.status,
@@ -179,7 +185,7 @@ export class DocumentsService {
           rejection_reason: doc.rejection_reason,
           expires_at: doc.expires_at,
         });
-        
+
         return acc;
       }, {});
 
@@ -237,7 +243,7 @@ export class DocumentsService {
   async checkRequiredDocuments(userId: string, userType: string) {
     try {
       const requiredDocuments = this.getRequiredDocumentsForUserType(userType);
-      
+
       const userDocuments = await this.prisma.document.findMany({
         where: {
           user_id: userId,
@@ -270,10 +276,7 @@ export class DocumentsService {
    * Get required documents based on user type
    */
   private getRequiredDocumentsForUserType(userType: string): DocumentType[] {
-    const baseDocuments = [
-      DocumentType.ID_CARD,
-      DocumentType.PROFILE_PHOTO,
-    ];
+    const baseDocuments = [DocumentType.ID_CARD, DocumentType.PROFILE_PHOTO];
 
     if (userType === 'carrier') {
       return [
@@ -300,10 +303,10 @@ export class DocumentsService {
    * Update a document (metadata and/or file replacement)
    */
   async updateDocument(
-    documentId: string, 
-    userId: string, 
+    documentId: string,
+    userId: string,
     updateData: { file_name?: string; expires_at?: string },
-    newFile?: Express.Multer.File
+    newFile?: Express.Multer.File,
   ) {
     try {
       const document = await this.prisma.document.findFirst({
@@ -363,10 +366,14 @@ export class DocumentsService {
 
       return {
         success: true,
-        message: newFile ? 'Document file and metadata updated successfully' : 'Document metadata updated successfully',
+        message: newFile
+          ? 'Document file and metadata updated successfully'
+          : 'Document metadata updated successfully',
         data: {
           ...updatedDocument,
-          file_url: SojebStorage.url(appConfig().storageUrl.documents + updatedDocument.file_url),
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.documents + updatedDocument.file_url,
+          ),
         },
       };
     } catch (error) {
@@ -403,8 +410,15 @@ export class DocumentsService {
       // Add full URLs to documents
       const documentsWithUrls = expiringDocuments.map((doc) => ({
         ...doc,
-        file_url: SojebStorage.url(appConfig().storageUrl.documents + doc.file_url),
-        days_until_expiry: doc.expires_at ? Math.ceil((doc.expires_at.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null,
+        file_url: SojebStorage.url(
+          appConfig().storageUrl.documents + doc.file_url,
+        ),
+        days_until_expiry: doc.expires_at
+          ? Math.ceil(
+              (doc.expires_at.getTime() - new Date().getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
+          : null,
       }));
 
       return {

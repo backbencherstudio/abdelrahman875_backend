@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateTemperatureDto, UpdateTemperatureDto } from './dto/temperature-create.dto';
+import {
+  CreateTemperatureDto,
+  UpdateTemperatureDto,
+} from './dto/temperature-create.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import appConfig from 'src/config/app.config';
@@ -73,7 +76,9 @@ export class TemperatureService {
     });
 
     if (!category) {
-      throw new NotFoundException(`Temperature category with ID ${id} not found.`);
+      throw new NotFoundException(
+        `Temperature category with ID ${id} not found.`,
+      );
     }
 
     return category;
@@ -89,7 +94,9 @@ export class TemperatureService {
     });
 
     if (!existing) {
-      throw new NotFoundException(`Temperature category with ID ${id} not found.`);
+      throw new NotFoundException(
+        `Temperature category with ID ${id} not found.`,
+      );
     }
 
     let iconUrl = existing.iconUrl;
@@ -128,13 +135,18 @@ export class TemperatureService {
     });
 
     if (!existing) {
-      throw new NotFoundException(`Temperature category with ID ${id} not found.`);
+      throw new NotFoundException(
+        `Temperature category with ID ${id} not found.`,
+      );
     }
 
     await this.prismaService.temperature.delete({
       where: { id },
     });
 
-    return { success: true, message: 'Temperature category deleted successfully.' };
+    return {
+      success: true,
+      message: 'Temperature category deleted successfully.',
+    };
   }
 }

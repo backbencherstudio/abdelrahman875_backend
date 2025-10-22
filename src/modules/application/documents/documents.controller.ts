@@ -13,7 +13,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DocumentType, DocumentStatus } from '@prisma/client';
@@ -49,7 +54,12 @@ export class DocumentsController {
   ) {
     try {
       const userId = req.user.id;
-      return await this.documentsService.uploadDocument(userId, type as DocumentType, file, fileName);
+      return await this.documentsService.uploadDocument(
+        userId,
+        type as DocumentType,
+        file,
+        fileName,
+      );
     } catch (error) {
       return {
         success: false,
@@ -80,7 +90,9 @@ export class DocumentsController {
   @Get('by-status')
   async getDocumentsByStatus(@Query() query: GetDocumentsByStatusDto) {
     try {
-      return await this.documentsService.getDocumentsByStatus(query.status as DocumentStatus);
+      return await this.documentsService.getDocumentsByStatus(
+        query.status as DocumentStatus,
+      );
     } catch (error) {
       return {
         success: false,
@@ -99,9 +111,9 @@ export class DocumentsController {
   ) {
     try {
       return await this.documentsService.reviewDocument(
-        documentId, 
-        reviewData.status as 'APPROVED' | 'REJECTED', 
-        reviewData.rejection_reason
+        documentId,
+        reviewData.status as 'APPROVED' | 'REJECTED',
+        reviewData.rejection_reason,
       );
     } catch (error) {
       return {
@@ -119,7 +131,10 @@ export class DocumentsController {
     try {
       const userId = req.user.userId;
       const userType = req.user.type;
-      return await this.documentsService.checkRequiredDocuments(userId, userType);
+      return await this.documentsService.checkRequiredDocuments(
+        userId,
+        userType,
+      );
     } catch (error) {
       return {
         success: false,
@@ -128,7 +143,9 @@ export class DocumentsController {
     }
   }
 
-  @ApiOperation({ summary: 'Update a document (metadata and/or file replacement)' })
+  @ApiOperation({
+    summary: 'Update a document (metadata and/or file replacement)',
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Put(':documentId')
@@ -149,7 +166,12 @@ export class DocumentsController {
   ) {
     try {
       const userId = req.user.userId;
-      return await this.documentsService.updateDocument(documentId, userId, updateDocumentDto, file);
+      return await this.documentsService.updateDocument(
+        documentId,
+        userId,
+        updateDocumentDto,
+        file,
+      );
     } catch (error) {
       return {
         success: false,
@@ -162,14 +184,14 @@ export class DocumentsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('expiring')
-  async getExpiringDocuments(
-    @Req() req: any,
-    @Query('days') days?: string,
-  ) {
+  async getExpiringDocuments(@Req() req: any, @Query('days') days?: string) {
     try {
       const userId = req.user.userId;
       const daysAhead = days ? parseInt(days, 10) : 30;
-      return await this.documentsService.getExpiringDocuments(userId, daysAhead);
+      return await this.documentsService.getExpiringDocuments(
+        userId,
+        daysAhead,
+      );
     } catch (error) {
       return {
         success: false,
@@ -182,7 +204,10 @@ export class DocumentsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete(':documentId')
-  async deleteDocument(@Param('documentId') documentId: string, @Req() req: any) {
+  async deleteDocument(
+    @Param('documentId') documentId: string,
+    @Req() req: any,
+  ) {
     try {
       const userId = req.user.userId;
       return await this.documentsService.deleteDocument(documentId, userId);
@@ -202,10 +227,13 @@ export class DocumentsController {
     try {
       const userId = req.user.userId;
       const userType = req.user.type;
-      
+
       // Check if user has all required documents
-      const documentCheck = await this.documentsService.checkRequiredDocuments(userId, userType);
-      
+      const documentCheck = await this.documentsService.checkRequiredDocuments(
+        userId,
+        userType,
+      );
+
       if (!documentCheck.success) {
         return documentCheck;
       }
@@ -213,7 +241,8 @@ export class DocumentsController {
       if (!documentCheck.data.hasAllDocuments) {
         return {
           success: false,
-          message: 'Please upload all required documents before submitting for review',
+          message:
+            'Please upload all required documents before submitting for review',
           data: {
             missingDocuments: documentCheck.data.missingDocuments,
           },
@@ -223,7 +252,7 @@ export class DocumentsController {
       // Update user application status to UNDER_REVIEW
       // This would typically be done in a user service, but for now we'll do it here
       // You might want to move this to a dedicated user service
-      
+
       return {
         success: true,
         message: 'Documents submitted for admin review successfully',

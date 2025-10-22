@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreatePromoCodeDto } from './dto/create-promocode.dto';
 import { UpdatePromoCodeDto } from './dto/update-promocode.dto';
@@ -10,7 +14,13 @@ import { DiscountType } from '@prisma/client';
 export class PromoCodeService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createPromoCodeDto: CreatePromoCodeDto): Promise<{ success: boolean; data?: PromoCodeResponseDto; message: string }> {
+  async create(
+    createPromoCodeDto: CreatePromoCodeDto,
+  ): Promise<{
+    success: boolean;
+    data?: PromoCodeResponseDto;
+    message: string;
+  }> {
     try {
       // Check if code already exists
       const existingCode = await this.prisma.promoCode.findUnique({
@@ -26,7 +36,10 @@ export class PromoCodeService {
 
       // Validate discount value based on type
       if (createPromoCodeDto.discount_type === DiscountType.PERCENTAGE) {
-        if (createPromoCodeDto.discount_value < 0 || createPromoCodeDto.discount_value > 100) {
+        if (
+          createPromoCodeDto.discount_value < 0 ||
+          createPromoCodeDto.discount_value > 100
+        ) {
           return {
             success: false,
             message: 'Percentage discount must be between 0 and 100',
@@ -66,13 +79,18 @@ export class PromoCodeService {
     }
   }
 
-  async findAll(query?: { 
-    q?: string; 
-    is_active?: string; 
+  async findAll(query?: {
+    q?: string;
+    is_active?: string;
     discount_type?: string;
     page?: string;
     limit?: string;
-  }): Promise<{ success: boolean; data?: PromoCodeResponseDto[]; total?: number; message: string }> {
+  }): Promise<{
+    success: boolean;
+    data?: PromoCodeResponseDto[];
+    total?: number;
+    message: string;
+  }> {
     try {
       const whereCondition: any = {};
 
@@ -105,7 +123,9 @@ export class PromoCodeService {
         this.prisma.promoCode.count({ where: whereCondition }),
       ]);
 
-      const formattedPromoCodes = promoCodes.map(promoCode => this.formatPromoCodeResponse(promoCode));
+      const formattedPromoCodes = promoCodes.map((promoCode) =>
+        this.formatPromoCodeResponse(promoCode),
+      );
 
       return {
         success: true,
@@ -121,7 +141,13 @@ export class PromoCodeService {
     }
   }
 
-  async findOne(id: string): Promise<{ success: boolean; data?: PromoCodeResponseDto; message: string }> {
+  async findOne(
+    id: string,
+  ): Promise<{
+    success: boolean;
+    data?: PromoCodeResponseDto;
+    message: string;
+  }> {
     try {
       const promoCode = await this.prisma.promoCode.findUnique({
         where: { id },
@@ -179,7 +205,14 @@ export class PromoCodeService {
     }
   }
 
-  async update(id: string, updatePromoCodeDto: UpdatePromoCodeDto): Promise<{ success: boolean; data?: PromoCodeResponseDto; message: string }> {
+  async update(
+    id: string,
+    updatePromoCodeDto: UpdatePromoCodeDto,
+  ): Promise<{
+    success: boolean;
+    data?: PromoCodeResponseDto;
+    message: string;
+  }> {
     try {
       const existingPromoCode = await this.prisma.promoCode.findUnique({
         where: { id },
@@ -195,7 +228,7 @@ export class PromoCodeService {
       // Check if code already exists (excluding current record)
       if (updatePromoCodeDto.code) {
         const existingCode = await this.prisma.promoCode.findFirst({
-          where: { 
+          where: {
             code: updatePromoCodeDto.code,
             id: { not: id },
           },
@@ -210,9 +243,13 @@ export class PromoCodeService {
       }
 
       // Validate discount value based on type
-      if (updatePromoCodeDto.discount_type === DiscountType.PERCENTAGE || 
-          (updatePromoCodeDto.discount_type === undefined && existingPromoCode.discount_type === DiscountType.PERCENTAGE)) {
-        const discountValue = updatePromoCodeDto.discount_value ?? existingPromoCode.discount_value;
+      if (
+        updatePromoCodeDto.discount_type === DiscountType.PERCENTAGE ||
+        (updatePromoCodeDto.discount_type === undefined &&
+          existingPromoCode.discount_type === DiscountType.PERCENTAGE)
+      ) {
+        const discountValue =
+          updatePromoCodeDto.discount_value ?? existingPromoCode.discount_value;
         if (discountValue < 0 || discountValue > 100) {
           return {
             success: false,
@@ -294,7 +331,9 @@ export class PromoCodeService {
     }
   }
 
-  async assignToUsers(assignPromoCodeDto: AssignPromoCodeDto): Promise<{ success: boolean; message: string }> {
+  async assignToUsers(
+    assignPromoCodeDto: AssignPromoCodeDto,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       const promoCode = await this.prisma.promoCode.findUnique({
         where: { id: assignPromoCodeDto.promo_code_id },
@@ -320,7 +359,7 @@ export class PromoCodeService {
       }
 
       // Create user-promo code relationships
-      const userPromoCodes = assignPromoCodeDto.user_ids.map(userId => ({
+      const userPromoCodes = assignPromoCodeDto.user_ids.map((userId) => ({
         user_id: userId,
         promo_code_id: assignPromoCodeDto.promo_code_id,
       }));
@@ -342,7 +381,10 @@ export class PromoCodeService {
     }
   }
 
-  async removeFromUsers(promoCodeId: string, userIds: string[]): Promise<{ success: boolean; message: string }> {
+  async removeFromUsers(
+    promoCodeId: string,
+    userIds: string[],
+  ): Promise<{ success: boolean; message: string }> {
     try {
       await this.prisma.userPromoCode.deleteMany({
         where: {
@@ -363,7 +405,13 @@ export class PromoCodeService {
     }
   }
 
-  async toggleActive(id: string): Promise<{ success: boolean; data?: PromoCodeResponseDto; message: string }> {
+  async toggleActive(
+    id: string,
+  ): Promise<{
+    success: boolean;
+    data?: PromoCodeResponseDto;
+    message: string;
+  }> {
     try {
       const promoCode = await this.prisma.promoCode.findUnique({
         where: { id },
@@ -396,13 +444,14 @@ export class PromoCodeService {
 
   private formatPromoCodeResponse(promoCode: any): PromoCodeResponseDto {
     const now = new Date();
-    const isValid = promoCode.is_active && 
-                   now >= promoCode.valid_from && 
-                   now <= promoCode.valid_until;
+    const isValid =
+      promoCode.is_active &&
+      now >= promoCode.valid_from &&
+      now <= promoCode.valid_until;
 
-    const remainingUses = promoCode.usage_limit ? 
-      Math.max(0, promoCode.usage_limit - promoCode.used_count) : 
-      null;
+    const remainingUses = promoCode.usage_limit
+      ? Math.max(0, promoCode.usage_limit - promoCode.used_count)
+      : null;
 
     return {
       id: promoCode.id,

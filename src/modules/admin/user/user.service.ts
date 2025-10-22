@@ -145,9 +145,9 @@ export class UserService {
         include: {
           documents: {
             orderBy: {
-              created_at: 'desc'
-            }
-          }
+              created_at: 'desc',
+            },
+          },
         },
       });
 
@@ -160,16 +160,18 @@ export class UserService {
 
       // Get required documents for this user type
       const requiredDocuments = this.getRequiredDocumentsForUserType(user.type);
-      const uploadedDocuments = user.documents.map(doc => doc.type);
-      
+      const uploadedDocuments = user.documents.map((doc) => doc.type);
+
       const missingDocuments = requiredDocuments.filter(
-        required => !uploadedDocuments.includes(required)
+        (required) => !uploadedDocuments.includes(required),
       );
 
       // Add document URLs
-      const documentsWithUrls = user.documents.map(doc => ({
+      const documentsWithUrls = user.documents.map((doc) => ({
         ...doc,
-        file_url: SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
+        file_url: SojebStorage.url(
+          appConfig().storageUrl.documents + doc.file_url,
+        ),
       }));
 
       return {
@@ -192,8 +194,8 @@ export class UserService {
             missingDocuments,
             hasAllDocuments: missingDocuments.length === 0,
             totalRequired: requiredDocuments.length,
-            totalUploaded: uploadedDocuments.length
-          }
+            totalUploaded: uploadedDocuments.length,
+          },
         },
       };
     } catch (error) {
@@ -209,8 +211,8 @@ export class UserService {
       const user = await this.prisma.user.findUnique({
         where: { id: id },
         include: {
-          documents: true
-        }
+          documents: true,
+        },
       });
       if (!user) {
         return {
@@ -221,10 +223,10 @@ export class UserService {
 
       // Check if user has all required documents
       const requiredDocuments = this.getRequiredDocumentsForUserType(user.type);
-      const uploadedDocuments = user.documents.map(doc => doc.type);
-      
+      const uploadedDocuments = user.documents.map((doc) => doc.type);
+
       const missingDocuments = requiredDocuments.filter(
-        required => !uploadedDocuments.includes(required)
+        (required) => !uploadedDocuments.includes(required),
       );
 
       if (missingDocuments.length > 0) {
@@ -234,8 +236,8 @@ export class UserService {
           data: {
             missingDocuments: missingDocuments,
             requiredDocuments: requiredDocuments,
-            uploadedDocuments: uploadedDocuments
-          }
+            uploadedDocuments: uploadedDocuments,
+          },
         };
       }
 
@@ -244,22 +246,22 @@ export class UserService {
         // Update user status
         await tx.user.update({
           where: { id: id },
-          data: { 
+          data: {
             approved_at: DateHelper.now(),
-            application_status: 'APPROVED'
+            application_status: 'APPROVED',
           },
         });
 
         // Mark all user documents as approved
         await tx.document.updateMany({
-          where: { 
+          where: {
             user_id: id,
-            status: 'PENDING'
+            status: 'PENDING',
           },
           data: {
             status: 'APPROVED',
-            reviewed_at: DateHelper.now()
-          }
+            reviewed_at: DateHelper.now(),
+          },
         });
       });
 
@@ -269,8 +271,8 @@ export class UserService {
         data: {
           approvedDocuments: uploadedDocuments.length,
           totalRequired: requiredDocuments.length,
-          approvalNotes: approvalNotes || null
-        }
+          approvalNotes: approvalNotes || null,
+        },
       };
     } catch (error) {
       return {
@@ -285,8 +287,8 @@ export class UserService {
       const user = await this.prisma.user.findUnique({
         where: { id: id },
         include: {
-          documents: true
-        }
+          documents: true,
+        },
       });
       if (!user) {
         return {
@@ -300,23 +302,23 @@ export class UserService {
         // Update user status
         await tx.user.update({
           where: { id: id },
-          data: { 
+          data: {
             approved_at: null,
-            application_status: 'REJECTED'
+            application_status: 'REJECTED',
           },
         });
 
         // Mark all user documents as rejected
         await tx.document.updateMany({
-          where: { 
+          where: {
             user_id: id,
-            status: 'PENDING'
+            status: 'PENDING',
           },
           data: {
             status: 'REJECTED',
             reviewed_at: DateHelper.now(),
-            rejection_reason: rejectionReason || 'User application rejected'
-          }
+            rejection_reason: rejectionReason || 'User application rejected',
+          },
         });
       });
 
@@ -325,8 +327,8 @@ export class UserService {
         message: 'User and all documents rejected successfully',
         data: {
           rejectedDocuments: user.documents.length,
-          rejectionReason: rejectionReason
-        }
+          rejectionReason: rejectionReason,
+        },
       };
     } catch (error) {
       return {
@@ -349,8 +351,8 @@ export class UserService {
       }
       await this.prisma.user.update({
         where: { id: id },
-        data: { 
-          application_status: 'UNDER_REVIEW'
+        data: {
+          application_status: 'UNDER_REVIEW',
         },
       });
       return {
@@ -404,7 +406,14 @@ export class UserService {
     if (userType === 'shipper') {
       return ['ID_CARD', 'KBIS', 'PROFILE_PHOTO', 'RIB'];
     } else if (userType === 'carrier') {
-      return ['ID_CARD', 'KBIS', 'DRIVING_LICENSE', 'TRANSPORT_LICENSE', 'INSURANCE_CERTIFICATE', 'PROFILE_PHOTO'];
+      return [
+        'ID_CARD',
+        'KBIS',
+        'DRIVING_LICENSE',
+        'TRANSPORT_LICENSE',
+        'INSURANCE_CERTIFICATE',
+        'PROFILE_PHOTO',
+      ];
     }
     return [];
   }

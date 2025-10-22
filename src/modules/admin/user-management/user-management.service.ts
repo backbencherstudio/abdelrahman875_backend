@@ -97,7 +97,6 @@ export class UserManagementService {
         }
       }
 
-
       const carriers = await this.prisma.user.findMany({
         where: whereCondition,
         include: {
@@ -144,7 +143,9 @@ export class UserManagementService {
           : null,
         documents: carrier.documents.map((doc) => ({
           ...doc,
-          file_url: doc.file_url ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url) : null,
+          file_url: doc.file_url
+            ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
+            : null,
         })),
       }));
 
@@ -183,7 +184,6 @@ export class UserManagementService {
         }
       }
 
-
       const shippers = await this.prisma.user.findMany({
         where: whereCondition,
         include: {
@@ -218,7 +218,9 @@ export class UserManagementService {
           : null,
         documents: shipper.documents.map((doc) => ({
           ...doc,
-          file_url: doc.file_url ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url) : null,
+          file_url: doc.file_url
+            ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
+            : null,
         })),
       }));
 

@@ -1,4 +1,11 @@
-import { IsArray, IsEmail, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { UploadDocumentDto } from './upload-document.dto';
@@ -34,7 +41,10 @@ export class RegisterWithDocumentsDto {
   @IsEnum(UserTypeEnum)
   type: UserTypeEnum;
 
-  @ApiProperty({ type: [UploadDocumentDto], description: 'Documents to upload' })
+  @ApiProperty({
+    type: [UploadDocumentDto],
+    description: 'Documents to upload',
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UploadDocumentDto)
