@@ -14,9 +14,7 @@ import { DiscountType } from '@prisma/client';
 export class PromoCodeService {
   constructor(private prisma: PrismaService) {}
 
-  async create(
-    createPromoCodeDto: CreatePromoCodeDto,
-  ): Promise<{
+  async create(createPromoCodeDto: CreatePromoCodeDto): Promise<{
     success: boolean;
     data?: PromoCodeResponseDto;
     message: string;
@@ -141,9 +139,7 @@ export class PromoCodeService {
     }
   }
 
-  async findOne(
-    id: string,
-  ): Promise<{
+  async findOne(id: string): Promise<{
     success: boolean;
     data?: PromoCodeResponseDto;
     message: string;
@@ -348,13 +344,13 @@ export class PromoCodeService {
 
       // Check if users exist
       const users = await this.prisma.user.findMany({
-        where: { id: { in: assignPromoCodeDto.user_ids } },
+        where: { id: { in: assignPromoCodeDto.user_ids }, type: 'shipper' },
       });
 
       if (users.length !== assignPromoCodeDto.user_ids.length) {
         return {
           success: false,
-          message: 'Some users not found',
+          message: `User(s) not found or not shippers`,
         };
       }
 
@@ -405,9 +401,7 @@ export class PromoCodeService {
     }
   }
 
-  async toggleActive(
-    id: string,
-  ): Promise<{
+  async toggleActive(id: string): Promise<{
     success: boolean;
     data?: PromoCodeResponseDto;
     message: string;
