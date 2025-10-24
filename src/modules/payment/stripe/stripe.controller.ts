@@ -31,7 +31,6 @@ export class StripeController {
          */
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session;
-          console.log({ webhook: 'checkout.session.completed' });
 
           // Update all matching payments for this session
           await this.prisma.payment.updateMany({
@@ -47,13 +46,14 @@ export class StripeController {
          */
         case 'payment_intent.succeeded': {
           const paymentIntent = event.data.object as Stripe.PaymentIntent;
-          console.log({ webhook: 'payment_intent.succeeded', paymentIntent });
 
           const missionIdFromMetadata = paymentIntent.metadata?.missionId;
           const shipperIdFromMetadata = paymentIntent.metadata?.shipperId;
 
           if (!missionIdFromMetadata || !shipperIdFromMetadata) {
-            console.error('PaymentIntent metadata missing missionId or shipperId');
+            console.error(
+              'PaymentIntent metadata missing missionId or shipperId',
+            );
             return;
           }
 
@@ -68,7 +68,10 @@ export class StripeController {
           });
 
           if (!payment) {
-            console.error('Payment not found for mission:', missionIdFromMetadata);
+            console.error(
+              'Payment not found for mission:',
+              missionIdFromMetadata,
+            );
             return;
           }
 
@@ -79,12 +82,10 @@ export class StripeController {
            * to ensure consistency.
            */
           await this.prisma.$transaction(async (tx) => {
-            // 1️⃣ Mark payment as completed
             await tx.payment.update({
               where: { id: payment.id },
               data: {
-                status: PaymentStatus.COMPLETED,
-                checkout_url: null,
+                status: PaymentStatus.HELD_IN_ESCROW,
                 provider_id: paymentIntent.id,
                 session_expires_at: null,
                 metadata: null,
@@ -101,7 +102,7 @@ export class StripeController {
                 type: 'mission_payment',
                 provider: 'STRIPE',
                 reference_number: paymentIntent.id,
-                status: 'succeeded',
+                status: PaymentStatus.HELD_IN_ESCROW,
                 raw_status: paymentIntent.status,
                 amount: payment.amount,
                 currency: payment.currency,
@@ -115,19 +116,17 @@ export class StripeController {
               data: {
                 mission_id: payment.mission_id,
                 event: MissionStatus.PAYMENT_CONFIRMED,
-                description: 'Payment confirmed via Stripe',
+                description: 'Payment held in escrow via Stripe',
                 user_id: payment.shipper_id,
               },
             });
 
-            // 4️⃣ Update mission status to next stage
             await tx.mission.update({
               where: { id: payment.mission_id },
               data: { status: MissionStatus.SEARCHING_CARRIER },
             });
           });
 
-          console.log(`Payment for mission ${payment.mission_id} completed.`);
           break;
         }
 

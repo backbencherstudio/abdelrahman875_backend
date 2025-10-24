@@ -277,11 +277,11 @@ model PaymentTransaction {
   user    User?   @relation(fields: [user_id], references: [id])
 
   order_id         String?
-  type             String?  @default("order")
-  withdraw_via     String?  @default("wallet")
+  type             String?       @default("order")
+  withdraw_via     String?       @default("wallet")
   provider         String?
   reference_number String?
-  status           String?  @default("pending")
+  status           PaymentStatus @default(PENDING)
   raw_status       String?
   amount           Decimal?
   currency         String?
@@ -695,12 +695,15 @@ model Payment {
   provider_id       String? // payment intent id
   commission_rate   Float         @default(0.10)
   commission_amount Float?
-  payout_date       DateTime? // When carrier gets paid
 
-  // stripe specific fields
+  // Escrow fields
+  escrow_hold_until DateTime? // when funds can be released
+  released_at       DateTime? // actual release timestamp
+  payout_date       DateTime? // carrier receives funds
+
   checkout_session_id String? // Stripe Checkout Session ID
   checkout_url        String?
-  session_expires_at  DateTime? // 24h from session creation
+  session_expires_at  DateTime?
   metadata            Json?
 
   // Relations
@@ -776,9 +779,10 @@ enum MissionStatus {
 }
 
 enum PaymentStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
+  PENDING // payment initiated, waiting for shipper
+  HELD_IN_ESCROW // payment captured but held
+  RELEASED // payment released to carrier
+  COMPLETED // released & confirmed
   FAILED
   REFUNDED
   DISPUTED
