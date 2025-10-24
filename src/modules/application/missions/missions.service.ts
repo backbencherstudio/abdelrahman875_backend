@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
-import { MissionStatus, ShipmentType } from '@prisma/client';
+import { MissionStatus, PaymentStatus, ShipmentType } from '@prisma/client';
 import { AcceptMissionDto } from './dto/accept-mission.dto';
 import { PdfService } from 'src/common/pdf/pdf.service';
 import { ConfirmPickupDto } from './dto/pickup-mission.dto';
@@ -13,6 +13,7 @@ import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import * as fs from 'fs';
 import * as path from 'path';
 import appConfig from 'src/config/app.config';
+import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 
 @Injectable()
 export class MissionsService {
@@ -499,41 +500,104 @@ export class MissionsService {
     try {
       const mission = await this.prisma.mission.findUnique({
         where: { id: missionId },
+        include: { payment: true },
       });
+
       if (!mission) throw new NotFoundException('Mission not found');
+
       if (mission.shipper_id !== shipperId)
         throw new BadRequestException(
           'Only the mission creator can confirm the mission',
         );
 
-      if (mission.status === MissionStatus.SEARCHING_CARRIER) {
-        throw new BadRequestException('Mission is alreay in search mode');
-      }
-      if (mission.status !== MissionStatus.CREATED)
+      if (mission.status === MissionStatus.CANCELLED) {
         throw new BadRequestException(
-          'Mission can only be confirmed if in CREATED status',
+          'Mission is cancelled and cannot be confirmed',
+        );
+      }
+
+      if (mission.payment.status === PaymentStatus.COMPLETED) {
+        return {
+          success: false,
+          message: 'Mission payment is already confirmed',
+          checkoutUrl: null,
+        };
+      }
+
+      if (
+        mission.status !== MissionStatus.CREATED &&
+        mission.status !== MissionStatus.PAYMENT_PENDING
+      ) {
+        throw new BadRequestException(
+          `Mission cannot be confirmed because its status is ${mission.status}`,
+        );
+      }
+
+      if (
+        mission.payment?.status === PaymentStatus.PENDING &&
+        new Date() < mission.payment.session_expires_at
+      ) {
+        return {
+          success: true,
+          message: 'Payment session already exists',
+          checkoutUrl: mission.payment.checkout_url,
+        };
+      }
+
+      let updatedMission = mission;
+      let sessionUrl: string;
+
+      // Begin transaction for mission update and payment creation
+      await this.prisma.$transaction(async (tx) => {
+        if (mission.status === MissionStatus.CREATED) {
+          updatedMission = await tx.mission.update({
+            where: { id: missionId },
+            data: { status: MissionStatus.PAYMENT_PENDING },
+            include: { payment: true },
+          });
+
+          await this.logTimeline(
+            missionId,
+            MissionStatus.PAYMENT_PENDING,
+            shipperId,
+            'Shipper confirmed price, waiting for payment',
+          );
+        }
+
+        const session = await StripePayment.createCheckoutSession(
+          updatedMission,
+          shipperId,
         );
 
-      // TODO: Integrate actual payment processing here
-      // For now, simulate payment confirmation by changing status
-      const updatedMission = await this.prisma.mission.update({
-        where: { id: missionId },
-        data: {
-          status: MissionStatus.SEARCHING_CARRIER,
-        },
-      });
+        await tx.payment.create({
+          data: {
+            mission_id: mission.id,
+            shipper_id: shipperId,
+            amount: mission.final_price,
+            currency: 'EUR',
+            status: PaymentStatus.PENDING,
+            provider: 'STRIPE',
+            checkout_session_id: session.id,
+            checkout_url: session.url,
+            session_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
+            commission_rate: mission.commission_rate,
+            commission_amount: mission.commission_amount,
+            metadata: {
+              distance_km: mission.distance_km,
+              goods_type: mission.goods_type,
+              missionId: mission.id,
+              shipperId,
+            },
+          },
+        });
 
-      await this.logTimeline(
-        missionId,
-        MissionStatus.SEARCHING_CARRIER,
-        shipperId,
-        'Shipper confirmed mission and started searching for carrier',
-      );
+        sessionUrl = session.url;
+      });
 
       return {
         success: true,
-        message: 'Mission confirmed successfully.',
-        data: updatedMission,
+        message: 'Payment session created successfully',
+        checkoutUrl: sessionUrl,
       };
     } catch (error) {
       return {
