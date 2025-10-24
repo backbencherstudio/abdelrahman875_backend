@@ -499,7 +499,7 @@ export class MissionsService {
         );
       }
 
-      if (mission.payment.status === PaymentStatus.COMPLETED) {
+      if (mission?.payment?.status === PaymentStatus?.COMPLETED) {
         return {
           success: false,
           message: 'Mission payment is already confirmed',
@@ -1038,7 +1038,6 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
     prismaClient?: any,
   ) {
     const prisma = prismaClient || this.prisma;
-    console.log('Logging timeline for mission:', missionId);
     await prisma.missionTimeline.create({
       data: {
         mission_id: missionId,
