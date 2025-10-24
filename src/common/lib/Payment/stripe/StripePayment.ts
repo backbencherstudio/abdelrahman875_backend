@@ -2,6 +2,7 @@ import stripe from 'stripe';
 import * as fs from 'fs';
 import appConfig from '../../../../config/app.config';
 import { Fetch } from '../../Fetch';
+import { Mission } from '@prisma/client';
 
 const STRIPE_SECRET_KEY = appConfig().payment.stripe.secret_key;
 
@@ -150,7 +151,7 @@ export class StripePayment {
    * @param price
    * @returns
    */
-  static async createCheckoutSession() {
+  static async createCheckoutSession(mission: Mission, shipperId: string) {
     const success_url = `${
       appConfig().app.url
     }/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -158,23 +159,31 @@ export class StripePayment {
 
     const session = await Stripe.checkout.sessions.create({
       mode: 'payment',
+      currency: 'eur',
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'eur',
+            unit_amount: Math.round(mission.final_price * 100),
             product_data: {
-              name: 'Sample Product',
+              name: `Delivery from ${mission.pickup_city} → ${mission.delivery_city}`,
+              description: `Type: ${mission.goods_type} | Distance: ${mission.distance_km.toFixed(1)} km`,
             },
-            unit_amount: 2000, // $20.00
           },
           quantity: 1,
         },
       ],
-
+      payment_intent_data: {
+        metadata: {
+          missionId: mission.id,
+          shipperId,
+          distanceKm: mission.distance_km.toString(),
+          goodsType: mission.goods_type,
+        },
+      },
       success_url: success_url,
       cancel_url: cancel_url,
-      // automatic_tax: { enabled: true },
     });
     return session;
   }

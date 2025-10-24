@@ -593,9 +593,9 @@ model Mission {
   pickup_photo        String?
   pickup_signature    String? // signature of the person who picks up
   delivery_photo      String?
-  carrier_signature  String? // signature of the carrier
+  carrier_signature   String? // signature of the carrier
   recipient_signature String? // signature of the person who receives
-  loading_notes      String?
+  loading_notes       String?
   delivery_notes      String?
 
   // Status
@@ -605,12 +605,13 @@ model Mission {
   cmr_document_url          String?
   confirmation_document_url String?
   invoice_document_url      String?
-  
+
   timelines MissionTimeline[]
 
-  // Relation to Temperature
-  temperature_id String?
-  temperature    Temperature? @relation(fields: [temperature_id], references: [id])
+  // Custom Temperature fields
+  temp_min Float?
+  temp_max Float?
+  tem_unit TemperatureUnit @default(CELSIUS)
 
   // Relations
   shipper_id String
@@ -696,6 +697,12 @@ model Payment {
   commission_amount Float?
   payout_date       DateTime? // When carrier gets paid
 
+  // stripe specific fields
+  checkout_session_id String? // Stripe Checkout Session ID
+  checkout_url        String?
+  session_expires_at  DateTime? // 24h from session creation
+  metadata            Json?
+
   // Relations
   mission_id String  @unique
   mission    Mission @relation(fields: [mission_id], references: [id])
@@ -722,19 +729,6 @@ model MissionTimeline {
   mission    Mission @relation(fields: [mission_id], references: [id], onDelete: Cascade)
 
   @@map("mission_timelines")
-}
-
-model Temperature {
-  id          String  @id @default(cuid())
-  name        String  @unique // e.g., "FROZEN", "REFRIGERATED"
-  min_celsius Float? // optional, e.g., -18
-  max_celsius Float? // optional, e.g., 0
-  description String? // optional description
-  iconUrl     String?
-
-  missions Mission[]
-
-  @@map("temperatures")
 }
 
 // ===== ENUMS =====
@@ -799,36 +793,28 @@ enum ShipmentType {
   PREMIUM
 }
 
-enum TemperatureRange {
-  FROZEN        // -18°C to 0°C
-  REFRIGERATED  // +0°C to +7°C
-  AMBIENT       // +15°C to +25°C
-  CONTROLLED    // +2°C to +8°C
-  OTHER         // Custom temperature requirement
-}
-
 model PromoCode {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  code            String      @unique
-  description     String?
-  discount_type   DiscountType
-  discount_value  Float       // Percentage (0-100) or fixed amount
-  min_order_amount Float?     // Minimum order amount to use this code
-  max_discount    Float?      // Maximum discount amount (for percentage)
-  usage_limit     Int?        // Total usage limit (null = unlimited)
-  used_count      Int         @default(0)
-  user_limit      Int?        // Usage limit per user (null = unlimited)
-  
-  valid_from      DateTime
-  valid_until     DateTime
-  is_active       Boolean     @default(true)
-  
+  code             String       @unique
+  description      String?
+  discount_type    DiscountType
+  discount_value   Float // Percentage (0-100) or fixed amount
+  min_order_amount Float? // Minimum order amount to use this code
+  max_discount     Float? // Maximum discount amount (for percentage)
+  usage_limit      Int? // Total usage limit (null = unlimited)
+  used_count       Int          @default(0)
+  user_limit       Int? // Usage limit per user (null = unlimited)
+
+  valid_from  DateTime
+  valid_until DateTime
+  is_active   Boolean  @default(true)
+
   // Relations
   user_restrictions UserPromoCode[] // Users who can use this code
-  usages           PromoCodeUsage[] // Usage history
+  usages            PromoCodeUsage[] // Usage history
 
   @@map("promo_codes")
 }
@@ -837,8 +823,8 @@ model UserPromoCode {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
 
-  user_id     String
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id       String
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   promo_code_id String
   promo_code    PromoCode @relation(fields: [promo_code_id], references: [id], onDelete: Cascade)
 
@@ -853,10 +839,10 @@ model PromoCodeUsage {
   promo_code_id String
   promo_code    PromoCode @relation(fields: [promo_code_id], references: [id], onDelete: Cascade)
   user_id       String
-  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   mission_id    String?
-  mission       Mission? @relation(fields: [mission_id], references: [id], onDelete: SetNull)
-  
+  mission       Mission?  @relation(fields: [mission_id], references: [id], onDelete: SetNull)
+
   discount_amount Float
   order_amount    Float
 
@@ -866,6 +852,11 @@ model PromoCodeUsage {
 enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
+}
+
+enum TemperatureUnit {
+  CELSIUS
+  FAHRENHEIT
 }
 
 // this table stores example

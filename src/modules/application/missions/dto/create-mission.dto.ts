@@ -9,7 +9,7 @@ import {
   Max,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ShipmentType } from '@prisma/client';
+import { ShipmentType, TemperatureUnit } from '@prisma/client';
 
 export enum TemperatureRange {
   FROZEN = 'FROZEN', // -18°C to 0°C
@@ -69,12 +69,25 @@ export class CreateMissionDto {
   @IsString()
   goods_type: string;
 
-  // @ApiProperty({ enum: TemperatureRange, description: 'Predefined temperature range', required: false })
-  // @IsOptional()
-  // @IsEnum(TemperatureRange)
-  // temperature_required?: TemperatureRange;
+  @ApiProperty({ description: 'Minimum temperature', required: true })
+  @IsNumber()
+  @Min(0)
+  temp_min: number;
 
-  temperature_id?: string;
+  @ApiProperty({ description: 'Maximum temperature', required: true })
+  @IsNumber()
+  @Min(0)
+  temp_max: number;
+
+  @ApiProperty({
+    description: 'Temperature unit',
+    enum: TemperatureUnit,
+    required: false,
+    default: TemperatureUnit.CELSIUS,
+  })
+  @IsEnum(TemperatureUnit)
+  @IsOptional()
+  tem_unit?: TemperatureUnit = TemperatureUnit.CELSIUS;
 
   @ApiProperty({ description: 'Package length in meters', required: false })
   @IsOptional()
