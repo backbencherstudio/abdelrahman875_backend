@@ -24,130 +24,116 @@ export class MissionsService {
 
   async createMission(createMissionDto: CreateMissionDto, shipperId: string) {
     try {
-      // Debug: Check if shipper exists
+      // Start a transaction
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Check if shipper exists
+        const shipper = await prisma.user.findUnique({
+          where: { id: shipperId },
+          select: { id: true, name: true, type: true },
+        });
 
-      const shipper = await this.prisma.user.findUnique({
-        where: { id: shipperId },
-        select: { id: true, name: true, type: true },
-      });
+        if (!shipper) {
+          throw new BadRequestException(
+            `Shipper with ID ${shipperId} not found`,
+          );
+        }
 
-      if (!shipper) {
-        throw new BadRequestException(`Shipper with ID ${shipperId} not found`);
-      }
+        // Calculate distance if not provided
+        let distance = createMissionDto.distance_km;
+        if (!distance) {
+          distance = await this.calculateDistance(
+            createMissionDto.loading_address,
+            createMissionDto.delivery_address,
+          );
+        }
 
-      // Calculate distance if not provided
-      let distance = createMissionDto.distance_km;
-      if (!distance) {
-        distance = await this.calculateDistance(
-          createMissionDto.loading_address,
-          createMissionDto.delivery_address,
+        // Calculate pricing
+        const pricing = this.calculatePricing(
+          distance,
+          createMissionDto.shipment_type,
         );
-      }
 
-      // Calculate pricing
-      const pricing = this.calculatePricing(
-        distance,
-        createMissionDto.shipment_type,
-      );
+        // Calculate volume if not provided
+        let volume = createMissionDto.volume_m3;
+        if (
+          !volume &&
+          createMissionDto.length_m &&
+          createMissionDto.width_m &&
+          createMissionDto.height_m
+        ) {
+          volume =
+            createMissionDto.length_m *
+            createMissionDto.width_m *
+            createMissionDto.height_m;
+        }
 
-      // Calculate volume if not provided
-      let volume = createMissionDto.volume_m3;
-      if (
-        !volume &&
-        createMissionDto.length_m &&
-        createMissionDto.width_m &&
-        createMissionDto.height_m
-      ) {
-        volume =
-          createMissionDto.length_m *
-          createMissionDto.width_m *
-          createMissionDto.height_m;
-      }
-
-      // Create mission
-      const mission = await this.prisma.mission.create({
-        data: {
-          // Address Information
-          pickup_address: `${createMissionDto.loading_address}, ${createMissionDto.loading_city} ${createMissionDto.loading_postal_code}`,
-          pickup_city: createMissionDto.loading_city,
-          pickup_postal_code: createMissionDto.loading_postal_code,
-          delivery_address: `${createMissionDto.delivery_address}, ${createMissionDto.delivery_city} ${createMissionDto.delivery_postal_code}`,
-          delivery_city: createMissionDto.delivery_city,
-          delivery_postal_code: createMissionDto.delivery_postal_code,
-
-          // Contact Information
-          pickup_contact_name:
-            createMissionDto.loading_staff_name || 'Contact Name',
-          pickup_contact_phone: createMissionDto.shipper_phone,
-          delivery_contact_name: createMissionDto.recipient_name,
-          delivery_contact_phone: createMissionDto.recipient_phone,
-
-          // Shipment Details
-          shipment_type: createMissionDto.shipment_type,
-          // temperature_id: createMissionDto.temperature_id,
-          temperature: {
-            connect: { id: createMissionDto.temperature_id },
+        // Create mission
+        const mission = await prisma.mission.create({
+          data: {
+            pickup_address: `${createMissionDto.loading_address}, ${createMissionDto.loading_city} ${createMissionDto.loading_postal_code}`,
+            pickup_city: createMissionDto.loading_city,
+            pickup_postal_code: createMissionDto.loading_postal_code,
+            delivery_address: `${createMissionDto.delivery_address}, ${createMissionDto.delivery_city} ${createMissionDto.delivery_postal_code}`,
+            delivery_city: createMissionDto.delivery_city,
+            delivery_postal_code: createMissionDto.delivery_postal_code,
+            pickup_contact_name:
+              createMissionDto.loading_staff_name || 'Contact Name',
+            pickup_contact_phone: createMissionDto.shipper_phone,
+            delivery_contact_name: createMissionDto.recipient_name,
+            delivery_contact_phone: createMissionDto.recipient_phone,
+            shipment_type: createMissionDto.shipment_type,
+            temp_min: createMissionDto.temp_min,
+            temp_max: createMissionDto.temp_max,
+            tem_unit: createMissionDto.tem_unit,
+            package_length: createMissionDto.length_m,
+            package_width: createMissionDto.width_m,
+            package_height: createMissionDto.height_m,
+            delivery_date: createMissionDto.delivery_date
+              ? new Date(createMissionDto.delivery_date)
+              : null,
+            delivery_time: createMissionDto.delivery_time,
+            pickup_instructions: createMissionDto.loading_instructions,
+            delivery_instructions: createMissionDto.delivery_instructions,
+            delivery_message: createMissionDto.delivery_message,
+            goods_type: createMissionDto.goods_type,
+            parcels_count: 1,
+            weight_kg: createMissionDto.weight_kg,
+            volume_m3: volume || 0,
+            special_instructions:
+              createMissionDto.loading_instructions ||
+              createMissionDto.delivery_instructions,
+            fragile: createMissionDto.fragile || false,
+            pickup_date: new Date(createMissionDto.loading_date),
+            pickup_time: createMissionDto.loading_time,
+            time_slot: createMissionDto.loading_time,
+            distance_km: distance,
+            base_price: pricing.basePrice,
+            final_price: pricing.finalPrice,
+            commission_rate: 0.1,
+            commission_amount: pricing.commissionAmount,
+            vat_rate: 0.2,
+            vat_amount: pricing.vatAmount,
+            status: MissionStatus.CREATED,
+            shipper: { connect: { id: shipperId } },
           },
-          // Package Dimensions
-          package_length: createMissionDto.length_m,
-          package_width: createMissionDto.width_m,
-          package_height: createMissionDto.height_m,
+        });
 
-          // Delivery Timing
-          delivery_date: createMissionDto.delivery_date
-            ? new Date(createMissionDto.delivery_date)
-            : null,
-          delivery_time: createMissionDto.delivery_time,
+        // Log timeline
+        await this.logTimeline(
+          mission.id,
+          MissionStatus.CREATED,
+          shipperId,
+          'Mission created',
+          prisma,
+        );
 
-          // Instructions
-          pickup_instructions: createMissionDto.loading_instructions,
-          delivery_instructions: createMissionDto.delivery_instructions,
-          delivery_message: createMissionDto.delivery_message,
-
-          // Goods Information
-          goods_type: createMissionDto.goods_type,
-          parcels_count: 1, // Default to 1, can be calculated based on dimensions
-          weight_kg: createMissionDto.weight_kg,
-          volume_m3: volume || 0,
-          special_instructions:
-            createMissionDto.loading_instructions ||
-            createMissionDto.delivery_instructions,
-          fragile: createMissionDto.fragile || false,
-
-          // Timing
-          pickup_date: new Date(createMissionDto.loading_date),
-          pickup_time: createMissionDto.loading_time,
-          time_slot: createMissionDto.loading_time, // Temporary - will be removed after Prisma client regeneration
-
-          // Pricing
-          distance_km: distance,
-          base_price: pricing.basePrice,
-          final_price: pricing.finalPrice,
-          commission_rate: 0.1, // 10% platform commission
-          commission_amount: pricing.commissionAmount,
-          vat_rate: 0.2, // 20% VAT
-          vat_amount: pricing.vatAmount,
-          // Status
-          status: MissionStatus.CREATED,
-
-          // Relations
-          shipper: {
-            connect: { id: shipperId },
-          },
-        },
+        return mission;
       });
-
-      await this.logTimeline(
-        mission.id,
-        MissionStatus.CREATED,
-        shipperId,
-        'Mission created',
-      );
 
       return {
         success: true,
         message: 'Mission created successfully',
-        data: mission,
+        data: result,
       };
     } catch (error) {
       return {
@@ -177,7 +163,6 @@ export class MissionsService {
               completed_missions: true,
             },
           },
-          temperature: true,
         },
         orderBy: {
           created_at: 'desc',
@@ -230,7 +215,6 @@ export class MissionsService {
               description: true,
             },
           },
-          temperature: true,
         },
         orderBy: {
           created_at: 'desc',
@@ -376,7 +360,6 @@ export class MissionsService {
               created_at: 'asc',
             },
           },
-          temperature: true,
         },
       });
 
@@ -1052,8 +1035,11 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
     event: MissionStatus,
     userId?: string,
     description?: string,
+    prismaClient?: any,
   ) {
-    await this.prisma.missionTimeline.create({
+    const prisma = prismaClient || this.prisma;
+    console.log('Logging timeline for mission:', missionId);
+    await prisma.missionTimeline.create({
       data: {
         mission_id: missionId,
         event,

@@ -608,9 +608,10 @@ model Mission {
 
   timelines MissionTimeline[]
 
-  // Relation to Temperature
-  temperature_id String?
-  temperature    Temperature? @relation(fields: [temperature_id], references: [id])
+  // Custom Temperature fields
+  temp_min Float?
+  temp_max Float?
+  tem_unit TemperatureUnit @default(CELSIUS)
 
   // Relations
   shipper_id String
@@ -730,19 +731,6 @@ model MissionTimeline {
   @@map("mission_timelines")
 }
 
-model Temperature {
-  id          String  @id @default(cuid())
-  name        String  @unique // e.g., "FROZEN", "REFRIGERATED"
-  min_celsius Float? // optional, e.g., -18
-  max_celsius Float? // optional, e.g., 0
-  description String? // optional description
-  iconUrl     String?
-
-  missions Mission[]
-
-  @@map("temperatures")
-}
-
 // ===== ENUMS =====
 
 enum DocumentType {
@@ -805,14 +793,6 @@ enum ShipmentType {
   PREMIUM
 }
 
-enum TemperatureRange {
-  FROZEN // -18°C to 0°C
-  REFRIGERATED // +0°C to +7°C
-  AMBIENT // +15°C to +25°C
-  CONTROLLED // +2°C to +8°C
-  OTHER // Custom temperature requirement
-}
-
 model PromoCode {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
@@ -872,6 +852,11 @@ model PromoCodeUsage {
 enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
+}
+
+enum TemperatureUnit {
+  CELSIUS
+  FAHRENHEIT
 }
 
 // this table stores example

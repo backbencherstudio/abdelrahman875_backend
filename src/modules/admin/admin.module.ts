@@ -7,7 +7,6 @@ import { UserModule } from './user/user.module';
 import { NotificationModule } from './notification/notification.module';
 import { UserManagementModule } from './user-management/user-management.module';
 import { PromoCodeModule } from './promocode/promocode.module';
-import { TemperatureModule } from './temprature-category/temperature.module';
 
 @Module({
   imports: [
@@ -17,7 +16,6 @@ import { TemperatureModule } from './temprature-category/temperature.module';
     PaymentTransactionModule,
     UserModule,
     NotificationModule,
-    TemperatureModule,
     UserManagementModule,
     PromoCodeModule,
   ],
