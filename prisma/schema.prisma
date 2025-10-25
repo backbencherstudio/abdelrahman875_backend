@@ -611,7 +611,7 @@ model Mission {
   // Custom Temperature fields
   temp_min Float?
   temp_max Float?
-  tem_unit TemperatureUnit @default(CELSIUS)
+  tem_unit TemperatureUnit @default(FAHRENHEIT)
 
   // Relations
   shipper_id String
