@@ -533,7 +533,7 @@ model Mission {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  shipment_type ShipmentType?
+  shipment_type ShipmentType? @default(EXPRESS)
 
   // Pickup Information
   pickup_lat           Float?
@@ -789,12 +789,7 @@ enum PaymentStatus {
 }
 
 enum ShipmentType {
-  FREIGHT
   EXPRESS
-  URGENT
-  STANDARD
-  ECONOMY
-  PREMIUM
 }
 
 model PromoCode {
