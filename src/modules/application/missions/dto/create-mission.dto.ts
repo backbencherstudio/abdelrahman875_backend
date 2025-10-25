@@ -11,14 +11,6 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { ShipmentType, TemperatureUnit } from '@prisma/client';
 
-export enum TemperatureRange {
-  FROZEN = 'FROZEN', // -18°C to 0°C
-  REFRIGERATED = 'REFRIGERATED', // +0°C to +7°C
-  AMBIENT = 'AMBIENT', // +15°C to +25°C
-  CONTROLLED = 'CONTROLLED', // +2°C to +8°C
-  OTHER = 'OTHER', // Custom temperature requirement
-}
-
 export class CreateMissionDto {
   // Shipment Type
   @ApiProperty({ enum: ShipmentType, description: 'Type of shipment' })

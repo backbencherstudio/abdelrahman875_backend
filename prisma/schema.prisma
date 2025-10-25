@@ -533,7 +533,7 @@ model Mission {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  shipment_type ShipmentType?
+  shipment_type ShipmentType? @default(EXPRESS)
 
   // Pickup Information
   pickup_lat           Float?
@@ -611,7 +611,7 @@ model Mission {
   // Custom Temperature fields
   temp_min Float?
   temp_max Float?
-  tem_unit TemperatureUnit @default(CELSIUS)
+  tem_unit TemperatureUnit @default(FAHRENHEIT)
 
   // Relations
   shipper_id String
@@ -789,12 +789,7 @@ enum PaymentStatus {
 }
 
 enum ShipmentType {
-  FREIGHT
   EXPRESS
-  URGENT
-  STANDARD
-  ECONOMY
-  PREMIUM
 }
 
 model PromoCode {

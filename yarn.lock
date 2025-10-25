@@ -2278,6 +2278,13 @@
   dependencies:
     "@types/express" "*"
 
+"@types/pdfkit@^0.17.3":
+  version "0.17.3"
+  resolved "https://registry.yarnpkg.com/@types/pdfkit/-/pdfkit-0.17.3.tgz#5f5808018d3f20f4409f59d3e4f50cca35c70b67"
+  integrity sha512-E4tp2qFaghqfS4K5TR4Gn1uTIkg0UAkhUgvVIszr5cS6ZmbioPWEkvhNDy3GtR9qdKC8DLQAnaaMlTcf346VsA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/pug@^2.0.10":
   version "2.0.10"
   resolved "https://registry.yarnpkg.com/@types/pug/-/pug-2.0.10.tgz#52f8dbd6113517aef901db20b4f3fca543b88c1f"
@@ -3175,6 +3182,11 @@ bcrypt@5.1.1:
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.11"
     node-addon-api "^5.0.0"
+
+bcryptjs@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/bcryptjs/-/bcryptjs-3.0.2.tgz#caadcca1afefe372ed6e20f86db8e8546361c1ca"
+  integrity sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==
 
 bignumber.js@^9.0.0:
   version "9.3.0"

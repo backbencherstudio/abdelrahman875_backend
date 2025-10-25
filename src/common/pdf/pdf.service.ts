@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Mission, User } from '@prisma/client';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as path from 'path';
 import appConfig from 'src/config/app.config';
@@ -131,7 +131,7 @@ export class PdfService {
     doc.moveDown(2);
     doc.text('Generated automatically by Deliver App System', {
       align: 'center',
-      italics: true,
+      // italics: true,
     });
 
     doc.end();
@@ -237,7 +237,7 @@ export class PdfService {
       .fontSize(10)
       .text(
         'This is a placeholder CMR. Final fields will be added when provided by the client.',
-        { align: 'center', italics: true },
+        { align: 'center' },
       );
 
     doc.end();
