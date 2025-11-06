@@ -118,35 +118,11 @@ export class UserManagementService {
             status: true,
             created_at: true,
             avatar: true,
-            documents: {
-              select: {
-                type: true,
-                file_url: true,
-                file_name: true,
-                status: true,
-                reviewed_at: true,
-                rejection_reason: true,
-              },
-            },
           },
           orderBy: { created_at: 'desc' },
         }),
         this.prisma.user.count({ where: whereCondition }),
       ]);
-
-      // Map URLs safely
-      const usersWithUrls = users.map((u) => ({
-        ...u,
-        avatar_url: u.avatar
-          ? SojebStorage.url(appConfig().storageUrl.avatar + u.avatar)
-          : null,
-        documents: (u.documents || []).map((doc) => ({
-          ...doc,
-          file_url: doc.file_url
-            ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
-            : null,
-        })),
-      }));
 
       // Construct response
       return {

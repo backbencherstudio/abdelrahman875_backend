@@ -165,9 +165,6 @@ export class MissionsService {
       }
 
       const whereCondition: any = {
-        status: {
-          in: [MissionStatus.SEARCHING_CARRIER, MissionStatus.CREATED],
-        },
         carrier_id: null,
       };
 
