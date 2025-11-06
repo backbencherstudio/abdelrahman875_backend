@@ -48,4 +48,10 @@ export class UserManagementController {
   async getAllUsers(@Query() query: UserFilterDto) {
     return this.userManagementService.getAllUsers(query);
   }
+
+  @Get('users/:id')
+  @ApiResponse({ description: 'Get single user' })
+  async getSingleUsers(@Param('id') userId: string) {
+    return this.userManagementService.getSingleUser(userId);
+  }
 }

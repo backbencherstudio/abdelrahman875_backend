@@ -146,4 +146,103 @@ export class UserManagementService {
       };
     }
   }
+
+  async getSingleUser(userId: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          name: true,
+          email: true,
+          type: true,
+          status: true,
+          application_status: true,
+          application_submitted_at: true,
+          application_rejected_at: true,
+          application_rejection_reason: true,
+          phone_number: true,
+          country: true,
+          state: true,
+          city: true,
+          address: true,
+          zip_code: true,
+          gender: true,
+          date_of_birth: true,
+          avatar: true,
+          fcm_token: true,
+          platform: true,
+          last_active: true,
+          created_at: true,
+          updated_at: true,
+          // Relations
+          profile: true,
+          vehicles: {
+            select: {
+              id: true,
+              type: true,
+              make: true,
+              model: true,
+              year: true,
+              license_plate: true,
+              color: true,
+              capacity_kg: true,
+              capacity_m3: true,
+              photos: true,
+              created_at: true,
+              updated_at: true,
+            },
+          },
+          documents: {
+            select: {
+              id: true,
+              type: true,
+              file_url: true,
+              file_name: true,
+              status: true,
+              reviewed_at: true,
+              rejection_reason: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+
+      // Map avatar URL
+      const avatar_url = user.avatar
+        ? SojebStorage.url(appConfig().storageUrl.avatar + user.avatar)
+        : null;
+
+      // Map document URLs
+      const documents = (user.documents || []).map((doc) => ({
+        ...doc,
+        file_url: doc.file_url
+          ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
+          : null,
+      }));
+
+      return {
+        success: true,
+        message: 'User fetched successfully',
+        data: {
+          ...user,
+          avatar_url,
+          documents,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }
