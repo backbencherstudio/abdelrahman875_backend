@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   BadRequestException,
   Delete,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,6 +27,7 @@ import { Request } from 'express';
 import { ConfirmPickupDto } from './dto/pickup-mission.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { TrackCarrierDto } from './dto/tracking.dto';
 
 @ApiTags('missions')
 @ApiBearerAuth()
@@ -62,7 +64,6 @@ export class MissionsController {
   })
   @Get('available')
   async getAvailableMissions(@Req() req: Request) {
-    const userId = (req as any).user.id;
     const userType = (req as any).user.type;
 
     // Only carriers can see available missions
@@ -73,7 +74,7 @@ export class MissionsController {
       };
     }
 
-    return this.missionsService.getAvailableMissions(userId);
+    return this.missionsService.getAvailableMissions(req.query);
   }
 
   @ApiOperation({ summary: 'Get user missions' })
@@ -89,9 +90,9 @@ export class MissionsController {
     return this.missionsService.getMyMissions(userId, userType);
   }
 
-  @ApiOperation({ summary: 'Accept a mission' })
+  @ApiOperation({ summary: 'Request for accept a mission' })
   @ApiResponse({ status: 200, description: 'Mission accepted successfully' })
-  @Post(':id/accept')
+  @Post(':id/send-req')
   async acceptMission(
     @Param('id') missionId: string,
     @Body() acceptMissionDto: AcceptMissionDto,
@@ -274,6 +275,39 @@ export class MissionsController {
       missionId,
       carrierId,
     );
+  }
+
+  @Post(':id/track')
+  async trackCarrier(
+    @Param('id') missionId: string,
+    @Body() dto: TrackCarrierDto,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+
+    if (user.type !== 'shipper' && user.type !== 'carrier') {
+      throw new ForbiddenException('Only carriers can send location');
+    }
+
+    return this.missionsService.trackCarrier(missionId, user.id, dto);
+  }
+
+  // Carrier Onboarding Endpoints
+  @ApiOperation({ summary: 'Get Stripe onboarding link for helper' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('carrier/onboarding-link')
+  async getHelperOnboardingLink(@Req() req: Request) {
+    try {
+      const user_id = req.user.id;
+      const result = await this.missionsService.getHelperOnboardingLink(user_id);
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 
   @ApiOperation({ summary: 'Shipper selects a carrier for a mission' })

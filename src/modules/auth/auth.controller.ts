@@ -532,6 +532,14 @@ export class AuthController {
         //   associated_users: associated_users,
         // });
 
+        const existing = await this.prisma.vehicle.findUnique({
+          where: { license_plate },
+        });
+
+        if (existing) {
+          throw new Error('Vehicle with this license plate already exists');
+        }
+
         // Create vehicle record
         if (vehicle_type && license_plate) {
           await this.prisma.vehicle.create({

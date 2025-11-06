@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SojebStorage } from '../../../common/lib/Disk/SojebStorage';
 import appConfig from '../../../config/app.config';
+import { UserFilterDto } from './dto';
 
 @Injectable()
 export class UserManagementService {
@@ -75,12 +76,22 @@ export class UserManagementService {
     }
   }
 
-  async getAllCarriers(query?: { q?: string; status?: string }) {
+  async getAllUsers(query?: UserFilterDto) {
     try {
-      const whereCondition: any = {
-        type: 'carrier',
-      };
+      const whereCondition: any = {};
 
+      // Filter by type
+      if (query?.type) {
+        whereCondition.type = query.type;
+      }
+
+      // Filter by status
+      if (query?.status) {
+        if (query.status === 'active') whereCondition.status = 1;
+        else if (query.status === 'blocked') whereCondition.status = 0;
+      }
+
+      // Search across name, email, phone_number
       if (query?.q) {
         whereCondition.OR = [
           { name: { contains: query.q, mode: 'insensitive' } },
@@ -89,59 +100,47 @@ export class UserManagementService {
         ];
       }
 
-      if (query?.status) {
-        if (query.status === 'active') {
-          whereCondition.status = 1;
-        } else if (query.status === 'blocked') {
-          whereCondition.status = 0;
-        }
-      }
+      // Pagination defaults
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 10;
+      const skip = (page - 1) * limit;
 
-      const carriers = await this.prisma.user.findMany({
-        where: whereCondition,
-        include: {
-          profile: true,
-          documents: {
-            select: {
-              type: true,
-              file_url: true,
-              file_name: true,
-              status: true,
-              reviewed_at: true,
-              rejection_reason: true,
+      // Run all Prisma queries concurrently
+      const [users, totalUsers] = await Promise.all([
+        this.prisma.user.findMany({
+          where: whereCondition,
+          skip,
+          take: limit,
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            status: true,
+            created_at: true,
+            avatar: true,
+            documents: {
+              select: {
+                type: true,
+                file_url: true,
+                file_name: true,
+                status: true,
+                reviewed_at: true,
+                rejection_reason: true,
+              },
             },
           },
-          vehicles: {
-            select: {
-              id: true,
-              type: true,
-              make: true,
-              model: true,
-              year: true,
-              license_plate: true,
-              capacity_kg: true,
-              capacity_m3: true,
-            },
-          },
-          _count: {
-            select: {
-              carrier_missions: true,
-              received_reviews: true,
-            },
-          },
-        },
-        orderBy: {
-          created_at: 'desc',
-        },
-      });
+          orderBy: { created_at: 'desc' },
+        }),
+        this.prisma.user.count({ where: whereCondition }),
+      ]);
 
-      // Add avatar URL to each carrier
-      const carriersWithUrls = carriers.map((carrier) => ({
-        ...carrier,
-        avatar_url: carrier.avatar
-          ? SojebStorage.url(appConfig().storageUrl.avatar + carrier.avatar)
+      // Map URLs safely
+      const usersWithUrls = users.map((u) => ({
+        ...u,
+        avatar_url: u.avatar
+          ? SojebStorage.url(appConfig().storageUrl.avatar + u.avatar)
           : null,
-        documents: carrier.documents.map((doc) => ({
+        documents: (u.documents || []).map((doc) => ({
           ...doc,
           file_url: doc.file_url
             ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
@@ -149,85 +148,19 @@ export class UserManagementService {
         })),
       }));
 
+      // Construct response
       return {
         success: true,
-        data: carriersWithUrls,
-        total: carriersWithUrls.length,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
-
-  async getAllShippers(query?: { q?: string; status?: string }) {
-    try {
-      const whereCondition: any = {
-        type: 'shipper',
-      };
-
-      if (query?.q) {
-        whereCondition.OR = [
-          { name: { contains: query.q, mode: 'insensitive' } },
-          { email: { contains: query.q, mode: 'insensitive' } },
-          { phone_number: { contains: query.q, mode: 'insensitive' } },
-        ];
-      }
-
-      if (query?.status) {
-        if (query.status === 'active') {
-          whereCondition.status = 1;
-        } else if (query.status === 'blocked') {
-          whereCondition.status = 0;
-        }
-      }
-
-      const shippers = await this.prisma.user.findMany({
-        where: whereCondition,
-        include: {
-          profile: true,
-          documents: {
-            select: {
-              type: true,
-              file_url: true,
-              file_name: true,
-              status: true,
-              reviewed_at: true,
-              rejection_reason: true,
-            },
-          },
-          _count: {
-            select: {
-              shipper_missions: true,
-              received_reviews: true,
-            },
-          },
+        message: 'Users fetched successfully',
+        data: users,
+        pagination: {
+          total: totalUsers,
+          currentPage: page,
+          limit,
+          totalPages: Math.ceil(totalUsers / limit),
+          hasNextPage: page * limit < totalUsers,
+          hasPreviousPage: page > 1,
         },
-        orderBy: {
-          created_at: 'desc',
-        },
-      });
-
-      // Add avatar URL to each shipper
-      const shippersWithUrls = shippers.map((shipper) => ({
-        ...shipper,
-        avatar_url: shipper.avatar
-          ? SojebStorage.url(appConfig().storageUrl.avatar + shipper.avatar)
-          : null,
-        documents: shipper.documents.map((doc) => ({
-          ...doc,
-          file_url: doc.file_url
-            ? SojebStorage.url(appConfig().storageUrl.documents + doc.file_url)
-            : null,
-        })),
-      }));
-
-      return {
-        success: true,
-        data: shippersWithUrls,
-        total: shippersWithUrls.length,
       };
     } catch (error) {
       return {

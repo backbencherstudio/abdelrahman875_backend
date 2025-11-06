@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import appConfig from 'src/config/app.config';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
+import { TrackCarrierDto } from './dto/tracking.dto';
 
 @Injectable()
 export class MissionsService {
@@ -143,35 +144,94 @@ export class MissionsService {
     }
   }
 
-  async getAvailableMissions(carrierId: string) {
+  async getAvailableMissions(query: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    q?: string;
+  }) {
     try {
-      const missions = await this.prisma.mission.findMany({
-        where: {
-          status: {
-            in: [MissionStatus.SEARCHING_CARRIER, MissionStatus.CREATED], // Allow both for testing
-          },
-          carrier_id: null,
+      const validStatuses = Object.values(MissionStatus);
+
+      // Validate status
+      if (
+        query.status &&
+        !validStatuses.includes(query.status as MissionStatus)
+      ) {
+        return {
+          success: false,
+          message: `Invalid mission status: '${query.status}'. Valid options are: ${validStatuses.join(', ')}`,
+        };
+      }
+
+      const whereCondition: any = {
+        status: {
+          in: [MissionStatus.SEARCHING_CARRIER, MissionStatus.CREATED],
         },
-        include: {
-          shipper: {
-            select: {
-              id: true,
-              name: true,
-              avatar: true,
-              average_rating: true,
-              total_reviews: true,
-              completed_missions: true,
+        carrier_id: null,
+      };
+
+      // Optional: Filter by status if explicitly provided
+      if (query?.status) {
+        whereCondition.status = query.status;
+      }
+
+      // Optional: Search by pickup/delivery city or shipper name
+      if (query?.q) {
+        whereCondition.OR = [
+          { pickup_city: { contains: query.q, mode: 'insensitive' } },
+          { delivery_city: { contains: query.q, mode: 'insensitive' } },
+          {
+            shipper: {
+              name: { contains: query.q, mode: 'insensitive' },
             },
           },
-        },
-        orderBy: {
-          created_at: 'desc',
-        },
-      });
+        ];
+      }
 
+      // Pagination setup
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 10;
+
+      // Fetch data + total count
+      const [missions, totalMissions] = await Promise.all([
+        this.prisma.mission.findMany({
+          where: whereCondition,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+          select: {
+            id: true,
+            created_at: true,
+            distance_km: true,
+            final_price: true,
+            status: true,
+            pickup_city: true,
+            delivery_city: true,
+            carrier: {
+              select: { id: true, name: true },
+            },
+            shipper: {
+              select: { id: true, name: true, avatar: true },
+            },
+          },
+        }),
+        this.prisma.mission.count({ where: whereCondition }),
+      ]);
+
+      // Return consistent response
       return {
         success: true,
+        message: 'Available missions fetched successfully',
         data: missions,
+        pagination: {
+          total: totalMissions,
+          currentPage: page,
+          limit,
+          totalPages: Math.ceil(totalMissions / limit),
+          hasNextPage: page * limit < totalMissions,
+          hasPreviousPage: page > 1,
+        },
       };
     } catch (error) {
       return {
@@ -475,6 +535,61 @@ export class MissionsService {
       return {
         success: false,
         message: error.message,
+      };
+    }
+  }
+
+  // Carrier Onboarding Methods
+  async getHelperOnboardingLink(user_id: string) {
+    try {
+      if (!user_id) {
+        throw new Error('User ID is required to get onboarding link');
+      }
+      const user = await this.prisma.user.findUnique({
+        where: { id: user_id },
+        select: {
+          stripe_connect_account_id: true,
+          stripe_onboarding_completed: true,
+          email: true,
+        },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+
+      if (!user.stripe_connect_account_id) {
+        return {
+          success: false,
+          message:
+            'Stripe Connect account not found. Please convert to helper role first.',
+        };
+      }
+
+      if (user.stripe_onboarding_completed) {
+        return {
+          success: false,
+          message: 'Onboarding already completed',
+        };
+      }
+
+      // Generate onboarding link using existing StripePayment method
+      const accountLink = await StripePayment.createOnboardingAccountLink(
+        user.stripe_connect_account_id,
+      );
+
+      return {
+        success: true,
+        url: accountLink.url,
+        message: 'Onboarding link generated successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to generate onboarding link',
       };
     }
   }
@@ -788,6 +903,7 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
         updatedMission,
         updatedMission.shipper,
         updatedMission.carrier,
+        uploadedFiles.pickup_signature,
       );
 
       return await tx.mission.update({
@@ -802,6 +918,42 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
         include: { shipper: true, carrier: true },
       });
     });
+  }
+
+  async trackCarrier(
+    missionId: string,
+    carrierId: string,
+    dto: TrackCarrierDto,
+  ) {
+    const mission = await this.prisma.mission.findUnique({
+      where: { id: missionId },
+    });
+    if (!mission) throw new NotFoundException('Mission not found');
+
+    // console.log(mission.carrier_id);
+
+    // if (mission.carrier_id !== carrierId)
+    //   throw new BadRequestException('Only the assigned carrier can track');
+
+    const trackingPoint = await this.prisma.trackingPoint.create({
+      data: {
+        mission_id: missionId,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        accuracy: dto.accuracy,
+        speed: dto.speed,
+        heading: dto.heading,
+      },
+    });
+
+    return {
+      latitude: trackingPoint.latitude,
+      longitude: trackingPoint.longitude,
+      accuracy: trackingPoint.accuracy,
+      speed: trackingPoint.speed,
+      heading: trackingPoint.heading,
+      googleMapsLink: `https://www.google.com/maps?q=${trackingPoint.latitude},${trackingPoint.longitude}`,
+    };
   }
 
   async selectCarrier(missionId: string, carrierId: string, shipperId: string) {

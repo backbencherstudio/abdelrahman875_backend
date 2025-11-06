@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import appConfig from '../../../config/app.config';
 import { ArrayHelper } from '../../helper/array.helper';
 import { Role } from '../../guard/role/role.enum';
+import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 
 const prisma = new PrismaClient();
 
@@ -604,5 +605,58 @@ export class UserRepository {
       data: { is_two_factor_enabled: 0, two_factor_secret: null },
     });
     return user;
+  }
+
+  // Create Stripe Connect account for a user by user_id
+  static async createStripeConnectAccount(user_id: string) {
+    try {
+      // Check if user already has a Connect account
+      const user = await prisma.user.findUnique({
+        where: { id: user_id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          username: true,
+          stripe_connect_account_id: true,
+        },
+      });
+
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      if (user.stripe_connect_account_id) {
+        return {
+          success: false,
+          message: 'User already has a Stripe Connect account',
+        };
+      }
+
+      // Create the Stripe Connect account
+      const stripeAccount = await StripePayment.createConnectedAccount(
+        user.email,
+      );
+
+      // Update user with Connect account ID and set status to pending
+      await prisma.user.update({
+        where: { id: user_id },
+        data: {
+          stripe_connect_account_id: stripeAccount.id,
+          stripe_account_status: 'pending',
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Stripe Connect account created successfully',
+        account_id: stripeAccount.id,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to create Stripe Connect account',
+      };
+    }
   }
 }

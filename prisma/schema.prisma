@@ -59,8 +59,14 @@ model User {
   gender        String?
   date_of_birth DateTime? @db.Date
 
-  // billing id. e.g. stripe customer id
+  // billing id. e.g. Stripe Customer ID
   billing_id String?
+
+  // Stripe Connect fields for carriers/helpers
+  stripe_connect_account_id   String?
+  stripe_account_status       StripeAccountStatus? @default(inactive)
+  stripe_onboarding_completed Boolean?             @default(false)
+  stripe_payouts_enabled      Boolean?             @default(false)
 
   type              String?   @default("user")
   email_verified_at DateTime?
@@ -68,7 +74,7 @@ model User {
   is_two_factor_enabled Int?    @default(0)
   two_factor_secret     String? // secret key for two factor authentication
 
-  // firebase cloud messaging token for push notifications
+  // Firebase cloud messaging token for push notifications
   fcm_token String?
   platform  String? // 'ios' | 'android'
 
@@ -857,6 +863,14 @@ enum TemperatureUnit {
   CELSIUS
   FAHRENHEIT
 }
+
+// Stripe account status enum
+enum StripeAccountStatus {
+  inactive   // Account created but onboarding not started
+  pending    // Onboarding started, KYC not completed
+  verified   // KYC completed, payouts enabled
+}
+
 
 // this table stores example
 // model Note {

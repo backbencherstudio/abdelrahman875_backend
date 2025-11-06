@@ -5,6 +5,7 @@ import { Role } from '../../../common/guard/role/role.enum';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { UserFilterDto } from './dto';
 
 @ApiBearerAuth()
 @ApiTags('User Management')
@@ -42,31 +43,9 @@ export class UserManagementController {
     }
   }
 
-  @ApiResponse({ description: 'Get all carrier profiles' })
-  @Get('carriers')
-  async getAllCarriers(@Query() query: { q?: string; status?: string }) {
-    try {
-      const result = await this.userManagementService.getAllCarriers(query);
-      return result;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
-
-  @ApiResponse({ description: 'Get all shipper profiles' })
-  @Get('shippers')
-  async getAllShippers(@Query() query: { q?: string; status?: string }) {
-    try {
-      const result = await this.userManagementService.getAllShippers(query);
-      return result;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+  @Get('users')
+  @ApiResponse({ description: 'Get all users (shippers + carriers)' })
+  async getAllUsers(@Query() query: UserFilterDto) {
+    return this.userManagementService.getAllUsers(query);
   }
 }

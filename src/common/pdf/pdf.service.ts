@@ -160,6 +160,7 @@ export class PdfService {
     mission: Mission,
     shipper: User,
     carrier: User,
+    signatureUrl?: string,
   ): Promise<string> {
     const fileName = `cmr_${mission.id}.pdf`;
     const filePath = path.join(process.cwd(), 'temp', fileName);
@@ -230,6 +231,19 @@ export class PdfService {
     doc.fontSize(11);
     doc.text(`Pickup: ${mission.pickup_address}`);
     doc.text(`Delivery: ${mission.delivery_address}`).moveDown(1.5);
+
+    if (signatureUrl) {
+      const sigBuffer = await fetch(signatureUrl).then((r) => r.arrayBuffer());
+      doc.addPage();
+      doc
+        .fontSize(14)
+        .text('Carrier Signature', { underline: true })
+        .moveDown(0.5);
+
+      doc.image(Buffer.from(sigBuffer), {
+        fit: [200, 100],
+      });
+    }
 
     // FOOTER
     doc.moveDown();

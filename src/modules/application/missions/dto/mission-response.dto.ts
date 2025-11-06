@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MissionStatus, ShipmentType } from '@prisma/client';
-import { TemperatureRange } from './create-mission.dto';
+import { MissionStatus, ShipmentType, TemperatureUnit } from '@prisma/client';
+import { IsEnum, IsNumber, IsOptional, Max, Min } from 'class-validator';
 
 export class MissionResponseDto {
   @ApiProperty()
@@ -47,8 +47,25 @@ export class MissionResponseDto {
   @ApiProperty()
   goods_type: string;
 
-  @ApiProperty({ enum: TemperatureRange, required: false })
-  temperature_range?: TemperatureRange;
+  @ApiProperty({ description: 'Minimum temperature', required: true })
+  @IsNumber()
+  @Min(0)
+  temp_min: number;
+
+  @ApiProperty({ description: 'Maximum temperature', required: true })
+  @IsNumber()
+  @Min(0)
+  temp_max: number;
+
+  @ApiProperty({
+    description: 'Temperature unit',
+    enum: TemperatureUnit,
+    required: false,
+    default: TemperatureUnit.CELSIUS,
+  })
+  @IsEnum(TemperatureUnit)
+  @IsOptional()
+  tem_unit?: TemperatureUnit = TemperatureUnit.CELSIUS;
 
   @ApiProperty({ required: false })
   other_goods_type?: string;
