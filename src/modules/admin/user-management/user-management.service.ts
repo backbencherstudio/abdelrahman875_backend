@@ -116,6 +116,7 @@ export class UserManagementService {
             name: true,
             type: true,
             status: true,
+            application_status: true,
             created_at: true,
             avatar: true,
           },
