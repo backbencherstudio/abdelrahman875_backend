@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
-import { MissionStatus, PaymentStatus, ShipmentType } from '@prisma/client';
+import {
+  MissionStatus,
+  PaymentStatus,
+  ShipmentType,
+  StripeAccountStatus,
+} from '@prisma/client';
 import { AcceptMissionDto } from './dto/accept-mission.dto';
 import { PdfService } from 'src/common/pdf/pdf.service';
 import { ConfirmPickupDto } from './dto/pickup-mission.dto';
@@ -135,6 +140,116 @@ export class MissionsService {
         success: true,
         message: 'Mission created successfully',
         data: result,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getAllMissions(query: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    q?: string;
+    carrier_id?: number;
+    shipper_id?: number;
+  }) {
+    try {
+      const validStatuses = Object.values(MissionStatus);
+
+      // Validate status
+      if (
+        query.status &&
+        !validStatuses.includes(query.status as MissionStatus)
+      ) {
+        return {
+          success: false,
+          message: `Invalid mission status: '${query.status}'. Valid options are: ${validStatuses.join(', ')}`,
+        };
+      }
+
+      const whereCondition: any = {};
+
+      // Optional: Filter by status
+      if (query?.status) {
+        whereCondition.status = query.status;
+      }
+
+      // Optional: Filter by carrier
+      if (query?.carrier_id) {
+        whereCondition.carrier_id = Number(query.carrier_id);
+      }
+
+      // Optional: Filter by shipper
+      if (query?.shipper_id) {
+        whereCondition.shipper_id = Number(query.shipper_id);
+      }
+
+      // Optional: Search across pickup/delivery city or shipper/carrier names
+      if (query?.q) {
+        whereCondition.OR = [
+          { pickup_city: { contains: query.q, mode: 'insensitive' } },
+          { delivery_city: { contains: query.q, mode: 'insensitive' } },
+          {
+            shipper: {
+              name: { contains: query.q, mode: 'insensitive' },
+            },
+          },
+          {
+            carrier: {
+              name: { contains: query.q, mode: 'insensitive' },
+            },
+          },
+        ];
+      }
+
+      // Pagination setup
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 10;
+      const skip = (page - 1) * limit;
+
+      // Fetch data + total count concurrently
+      const [missions, totalMissions] = await Promise.all([
+        this.prisma.mission.findMany({
+          where: whereCondition,
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+          select: {
+            id: true,
+            created_at: true,
+            distance_km: true,
+            final_price: true,
+            status: true,
+            pickup_city: true,
+            delivery_city: true,
+            carrier: {
+              select: { id: true, name: true, avatar: true },
+            },
+            shipper: {
+              select: { id: true, name: true, avatar: true },
+            },
+          },
+        }),
+        this.prisma.mission.count({ where: whereCondition }),
+      ]);
+
+      // Return structured response
+      return {
+        success: true,
+        message: 'All missions fetched successfully',
+        data: missions,
+        pagination: {
+          total: totalMissions,
+          currentPage: page,
+          limit,
+          totalPages: Math.ceil(totalMissions / limit),
+          hasNextPage: page * limit < totalMissions,
+          hasPreviousPage: page > 1,
+        },
       };
     } catch (error) {
       return {
@@ -591,6 +706,80 @@ export class MissionsService {
     }
   }
 
+  async checkHelperOnboardingStatus(user_id: string) {
+    try {
+      // Step 1: Verify user exists and has a Stripe account
+      const user = await this.prisma.user.findUnique({
+        where: { id: user_id },
+        select: {
+          stripe_connect_account_id: true,
+          stripe_onboarding_completed: true,
+        },
+      });
+
+      if (!user?.stripe_connect_account_id) {
+        return {
+          success: false,
+          message: 'Stripe Connect account not found for this user.',
+        };
+      }
+
+      // Step 2: Retrieve latest account status from Stripe
+      const account = await StripePayment.checkAccountStatus(
+        user.stripe_connect_account_id,
+      );
+
+      // Stripe returns multiple boolean flags — we interpret them like this:
+      const { details_submitted, payouts_enabled } = account;
+
+      // Step 3: Determine current onboarding + account state
+      let stripeAccountStatus: StripeAccountStatus =
+        StripeAccountStatus.inactive;
+
+      if (details_submitted && payouts_enabled) {
+        stripeAccountStatus = StripeAccountStatus.verified;
+      } else if (details_submitted && !payouts_enabled) {
+        stripeAccountStatus = StripeAccountStatus.pending;
+      }
+
+      const isOnboardCompleted = details_submitted && payouts_enabled;
+
+      // Step 4: Update user if the onboarding state changed
+      if (
+        user.stripe_onboarding_completed !== isOnboardCompleted ||
+        stripeAccountStatus !== StripeAccountStatus.inactive
+      ) {
+        await this.prisma.user.update({
+          where: { id: user_id },
+          data: {
+            stripe_onboarding_completed: isOnboardCompleted,
+            stripe_payouts_enabled: payouts_enabled,
+            stripe_account_status: stripeAccountStatus,
+          },
+        });
+      }
+
+      // Step 5: Return clean response
+      return {
+        success: true,
+        isOnboarded: isOnboardCompleted,
+        accountId: user.stripe_connect_account_id,
+        status: stripeAccountStatus,
+        message: 'Stripe onboarding status checked successfully.',
+      };
+    } catch (error) {
+      console.error('Error checking Stripe onboarding status:', error.message);
+      return {
+        success: false,
+        message: error.message || 'Failed to check onboarding status.',
+      };
+    }
+  }
+
+  async getExpressDashboardLink(userId: string) {
+    return await StripePayment.getExpressDashboardLink(userId);
+  }
+
   async confirmMission(missionId: string, shipperId: string) {
     try {
       const mission = await this.prisma.mission.findUnique({
@@ -906,7 +1095,7 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
       return await tx.mission.update({
         where: { id: missionId },
         data: {
-          cmr_document_url: cmrUrl,
+          affreightment_document_url: cmrUrl,
           pickup_photo: uploadedFiles.pickup_photo,
           pickup_signature: uploadedFiles.pickup_signature,
           loading_notes: pickupData.loading_notes,
@@ -1018,7 +1207,7 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
         await tx.mission.update({
           where: { id: missionId },
           data: {
-            confirmation_document_url: pdfUrl,
+            affreightment_document_url: pdfUrl,
           },
         });
 
@@ -1168,6 +1357,86 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
     throw new BadRequestException(
       'Only shippers or carriers can cancel missions',
     );
+  }
+
+  // documents
+  async getMissionDocuments(query: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    q?: string;
+  }) {
+    try {
+      const whereCondition: any = {
+        // OR: [
+        //   { affreightment_document_url: { not: null } },
+        //   { confirmation_document_url: { not: null } },
+        //   { invoice_document_url: { not: null } },
+        // ],
+      };
+
+      // Optional: filter by mission status
+      if (query.status) {
+        whereCondition.status = query.status;
+      }
+
+      // Optional: search by shipper/carrier name or city
+      if (query.q) {
+        whereCondition.OR = [
+          { pickup_city: { contains: query.q, mode: 'insensitive' } },
+          { delivery_city: { contains: query.q, mode: 'insensitive' } },
+          { shipper: { name: { contains: query.q, mode: 'insensitive' } } },
+          { carrier: { name: { contains: query.q, mode: 'insensitive' } } },
+        ];
+      }
+
+      // Pagination
+      const page = query.page ? Number(query.page) : 1;
+      const limit = query.limit ? Number(query.limit) : 10;
+      const skip = (page - 1) * limit;
+
+      // Fetch missions
+      const [missions, total] = await Promise.all([
+        this.prisma.mission.findMany({
+          where: whereCondition,
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+          select: {
+            id: true,
+            created_at: true,
+            final_price: true,
+            pickup_city: true,
+            delivery_city: true,
+            affreightment_document_url: true,
+            confirmation_document_url: true,
+            invoice_document_url: true,
+            shipper: { select: { id: true, name: true } },
+            carrier: { select: { id: true, name: true } },
+          },
+        }),
+        this.prisma.mission.count({ where: whereCondition }),
+      ]);
+
+      return {
+        success: true,
+        message: 'Mission documents fetched successfully',
+        data: missions,
+        pagination: {
+          total,
+          currentPage: page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+          hasPreviousPage: page > 1,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 
   private async calculateDistance(

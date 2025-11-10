@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Delete,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -55,6 +56,33 @@ export class MissionsController {
     }
 
     return this.missionsService.createMission(createMissionDto, userId);
+  }
+
+  @ApiOperation({ summary: 'Get all missions (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'All missions retrieved successfully',
+  })
+  @Get('admin/all')
+  async getAllMissions(@Req() req: Request) {
+    const userType = (req as any).user?.type;
+
+    // Only admins can access this endpoint
+    if (userType !== 'admin') {
+      return {
+        success: false,
+        message: 'Access denied: Admins only',
+      };
+    }
+
+    const query = req.query;
+    const missions = await this.missionsService.getAllMissions(query);
+
+    return {
+      success: true,
+      message: 'All missions retrieved successfully',
+      data: missions,
+    };
   }
 
   @ApiOperation({ summary: 'Get available missions for carriers' })
@@ -296,11 +324,46 @@ export class MissionsController {
   @ApiOperation({ summary: 'Get Stripe onboarding link for helper' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Get('carrier/onboarding-link')
+  @Get('stripe/onboarding-link')
   async getHelperOnboardingLink(@Req() req: Request) {
     try {
       const user_id = req.user.id;
-      const result = await this.missionsService.getHelperOnboardingLink(user_id);
+      const result =
+        await this.missionsService.getHelperOnboardingLink(user_id);
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  @Get('stripe/dashboard-login-link')
+  async getExpressDashboardLink(@Req() req: Request) {
+    try {
+      // const user_id = req.user.id;
+      const result = await this.missionsService.getExpressDashboardLink(
+        'acct_1SR9ISPDj2ZbY9rb',
+      );
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  @ApiOperation({ summary: 'Check helper onboarding status' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('stripe/onboarding-status')
+  async checkHelperOnboardingStatus(@Req() req: Request) {
+    try {
+      const user_id = req.user.id;
+      const result =
+        await this.missionsService.checkHelperOnboardingStatus(user_id);
       return result;
     } catch (error) {
       return {
@@ -350,5 +413,23 @@ export class MissionsController {
       success: false,
       message: 'Only shippers or carriers can cancel missions',
     };
+  }
+
+  // documents
+  @ApiOperation({ summary: 'Get mission document URLs' })
+  @ApiResponse({ status: 200, description: 'Documents fetched successfully' })
+  @ApiResponse({ status: 404, description: 'Mission not found' })
+  @Get('admin/documents')
+  async getMissionDocuments(@Req() req: any, @Query() query: any) {
+    const userType = (req as any)?.user?.type;
+
+    if (userType !== 'admin') {
+      return {
+        success: false,
+        message: 'Access denied: Only admins can view mission documents',
+      };
+    }
+
+    return this.missionsService.getMissionDocuments(query);
   }
 }

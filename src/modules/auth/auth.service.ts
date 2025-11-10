@@ -436,26 +436,24 @@ export class AuthService {
         });
       }
 
-      if (type === 'carrier') {
-        try {
-          const stripeResult = await UserRepository.createStripeConnectAccount(
-            user.data.id,
+      try {
+        const stripeResult = await UserRepository.createStripeConnectAccount(
+          user.data.id,
+        );
+        if (stripeResult.success) {
+          console.log(
+            `Stripe Connect account created for carrier ${user.data.id}: ${stripeResult.account_id}`,
           );
-          if (stripeResult.success) {
-            console.log(
-              `Stripe Connect account created for carrier ${user.data.id}: ${stripeResult.account_id}`,
-            );
-          } else {
-            console.error(
-              `Failed to create Stripe Connect account for carrier ${user.data.id}: ${stripeResult.message}`,
-            );
-          }
-        } catch (error) {
+        } else {
           console.error(
-            'Error creating Stripe Connect account for carrier:',
-            error.message,
+            `Failed to create Stripe Connect account for carrier ${user.data.id}: ${stripeResult.message}`,
           );
         }
+      } catch (error) {
+        console.error(
+          'Error creating Stripe Connect account for carrier:',
+          error.message,
+        );
       }
 
       // ----------------------------------------------------

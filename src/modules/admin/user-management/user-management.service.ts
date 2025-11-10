@@ -80,6 +80,8 @@ export class UserManagementService {
     try {
       const whereCondition: any = {};
 
+      whereCondition.NOT = { type: 'admin' };
+
       // Filter by type
       if (query?.type) {
         whereCondition.type = query.type;

@@ -608,9 +608,9 @@ model Mission {
   status MissionStatus @default(CREATED)
 
   // Document URLs
-  cmr_document_url          String?
-  confirmation_document_url String?
-  invoice_document_url      String?
+  affreightment_document_url String?
+  confirmation_document_url  String?
+  invoice_document_url       String?
 
   timelines MissionTimeline[]
 
@@ -866,11 +866,10 @@ enum TemperatureUnit {
 
 // Stripe account status enum
 enum StripeAccountStatus {
-  inactive   // Account created but onboarding not started
-  pending    // Onboarding started, KYC not completed
-  verified   // KYC completed, payouts enabled
+  inactive // Account created but onboarding not started
+  pending // Onboarding started, KYC not completed
+  verified // KYC completed, payouts enabled
 }
-
 
 // this table stores example
 // model Note {

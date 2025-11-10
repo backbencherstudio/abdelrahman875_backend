@@ -4,11 +4,13 @@ import { Request } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MissionStatus, PaymentStatus } from '@prisma/client';
 import Stripe from 'stripe';
+import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 
 @Controller('payment/stripe')
 export class StripeController {
   constructor(
     private readonly stripeService: StripeService,
+    private readonly stripePayment: StripePayment,
     private prisma: PrismaService,
   ) {}
 
@@ -29,14 +31,91 @@ export class StripeController {
          * This event fires when a Checkout Session completes.
          * We store the PaymentIntent ID in our payment record.
          */
-        case 'checkout.session.completed': {
-          const session = event.data.object as Stripe.Checkout.Session;
+        case 'payment_intent.succeeded': {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-          // Update all matching payments for this session
-          await this.prisma.payment.updateMany({
-            where: { checkout_session_id: session.id, provider: 'STRIPE' },
-            data: { provider_id: session.payment_intent as string },
+          const missionIdFromMetadata = paymentIntent.metadata?.missionId;
+          const shipperIdFromMetadata = paymentIntent.metadata?.shipperId;
+
+          if (!missionIdFromMetadata || !shipperIdFromMetadata) {
+            console.error(
+              'PaymentIntent metadata missing missionId or shipperId',
+            );
+            return;
+          }
+
+          // Find the payment record in pending state
+          const payment = await this.prisma.payment.findFirst({
+            where: {
+              mission_id: missionIdFromMetadata,
+              shipper_id: shipperIdFromMetadata,
+              provider: 'STRIPE',
+              status: PaymentStatus.PENDING,
+            },
           });
+
+          if (!payment) {
+            console.error(
+              'Payment not found for mission:',
+              missionIdFromMetadata,
+            );
+            return;
+          }
+
+          // 1️⃣ Capture the payment immediately
+          const capturedIntent = await this.stripePayment.capturePaymentIntent(
+            paymentIntent.id,
+          );
+
+          console.log(capturedIntent);
+
+          const paidAmount = (capturedIntent.amount ?? 0) / 100;
+
+          // 2️⃣ Update DB in a transaction
+          await this.prisma.$transaction(async (tx) => {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: PaymentStatus.COMPLETED, // mark as captured
+                provider_id: capturedIntent.id,
+                session_expires_at: null,
+                metadata: null,
+                updated_at: new Date(),
+              },
+            });
+
+            await tx.paymentTransaction.create({
+              data: {
+                user_id: payment.shipper_id,
+                store_id: null,
+                order_id: payment.mission_id,
+                type: 'mission_payment',
+                provider: 'STRIPE',
+                reference_number: capturedIntent.id,
+                status: PaymentStatus.COMPLETED,
+                raw_status: capturedIntent.status,
+                amount: payment.amount,
+                currency: payment.currency,
+                paid_amount: paidAmount,
+                paid_currency: capturedIntent.currency,
+              },
+            });
+
+            await tx.missionTimeline.create({
+              data: {
+                mission_id: payment.mission_id,
+                event: MissionStatus.PAYMENT_CONFIRMED,
+                description: 'Payment captured successfully via Stripe',
+                user_id: payment.shipper_id,
+              },
+            });
+
+            await tx.mission.update({
+              where: { id: payment.mission_id },
+              data: { status: MissionStatus.SEARCHING_CARRIER },
+            });
+          });
+
           break;
         }
 

@@ -181,6 +181,8 @@ export class StripePayment {
           distanceKm: mission.distance_km.toString(),
           goodsType: mission.goods_type,
         },
+        // application_fee_amount: Math.round(mission.final_price * 0.1 * 100),
+        // capture_method: 'manual',
       },
       success_url: success_url,
       cancel_url: cancel_url,
@@ -340,6 +342,17 @@ export class StripePayment {
     return accountLink;
   }
 
+  // Add this method to StripePayment class
+  static async checkAccountStatus(accountId: string) {
+    const account = await Stripe.accounts.retrieve(accountId);
+    return account;
+  }
+
+  static async getExpressDashboardLink(accountId: string) {
+    const loginLink = await Stripe.accounts.createLoginLink(accountId);
+    return loginLink;
+  }
+
   // transfer money to account
   static async createTransfer(
     account_id: string,
@@ -420,6 +433,10 @@ export class StripePayment {
     return Stripe.customers.verifySource(customerId, bankAccountId, {
       amounts,
     });
+  }
+
+  async capturePaymentIntent(paymentIntentId: string) {
+    return Stripe.paymentIntents.capture(paymentIntentId);
   }
 
   static async createACHPaymentIntent(customerId: string, amount: number) {
