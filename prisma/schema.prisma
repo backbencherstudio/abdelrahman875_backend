@@ -119,6 +119,8 @@ model User {
   total_reviews      Int?   @default(0)
   completed_missions Int?   @default(0)
 
+  mission_documents MissionDocuments[]
+
   // Promo code relations
   user_promo_codes  UserPromoCode[]
   promo_code_usages PromoCodeUsage[]
@@ -625,6 +627,8 @@ model Mission {
   carrier_id String?
   carrier    User?   @relation("CarrierMissions", fields: [carrier_id], references: [id])
 
+  mission_documents MissionDocuments[]
+
   // Tracking
   tracking_points     TrackingPoint[]
   mission_reviews     MissionReview[]
@@ -740,7 +744,31 @@ model MissionTimeline {
   @@map("mission_timelines")
 }
 
+model MissionDocuments {
+  id           String               @id @default(cuid())
+  created_at   DateTime             @default(now())
+  document_type MissionDocumentType
+  document_url String?              // actual file URL (optional)
+
+  // === Relations ===
+  mission_id String?                // optional link to mission
+  mission    Mission?               @relation(fields: [mission_id], references: [id])
+
+  user_id String?                   // optional link to user (who uploaded or owns it)
+  user     User?                    @relation(fields: [user_id], references: [id])
+}
+
 // ===== ENUMS =====
+
+enum MissionDocumentType {
+  FREIGHT
+  CMR
+  INVOICE
+  DEPARTURE_PHOTO
+  DEPARTURE_SIGNATURE
+  DELIVERY_PHOTO
+  DELIVERY_SIGNATURE
+}
 
 enum DocumentType {
   ID_CARD

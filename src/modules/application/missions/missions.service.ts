@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateMissionDto } from './dto/create-mission.dto';
 import {
+  MissionDocumentType,
   MissionStatus,
   PaymentStatus,
   ShipmentType,
@@ -1092,6 +1093,15 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
         uploadedFiles.pickup_signature,
       );
 
+      await tx.missionDocuments.create({
+        data: {
+          mission_id: missionId,
+          user_id: carrierId,
+          document_type: MissionDocumentType.CMR,
+          document_url: cmrUrl,
+        },
+      });
+
       return await tx.mission.update({
         where: { id: missionId },
         data: {
@@ -1203,6 +1213,15 @@ Special instructions: ${pickupData.special_instructions || 'N/A'}.
             updatedMission.shipper,
             updatedMission.carrier,
           );
+
+        await tx.missionDocuments.create({
+          data: {
+            mission_id: missionId,
+            user_id: shipperId,
+            document_type: MissionDocumentType.FREIGHT,
+            document_url: pdfUrl,
+          },
+        });
 
         await tx.mission.update({
           where: { id: missionId },

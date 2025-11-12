@@ -8,6 +8,7 @@ import { NotificationModule } from './notification/notification.module';
 import { UserManagementModule } from './user-management/user-management.module';
 import { PromoCodeModule } from './promocode/promocode.module';
 import { DashboardOverviewModule } from './overview/overview.module';
+import { MissionDocumentsModule } from './missionDocument/mission-module.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { DashboardOverviewModule } from './overview/overview.module';
     NotificationModule,
     UserManagementModule,
     PromoCodeModule,
-    DashboardOverviewModule
+    DashboardOverviewModule,
+    MissionDocumentsModule
   ],
 })
 export class AdminModule {}
