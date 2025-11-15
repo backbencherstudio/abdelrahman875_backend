@@ -745,17 +745,17 @@ model MissionTimeline {
 }
 
 model MissionDocuments {
-  id           String               @id @default(cuid())
-  created_at   DateTime             @default(now())
+  id            String              @id @default(cuid())
+  created_at    DateTime            @default(now())
   document_type MissionDocumentType
-  document_url String?              // actual file URL (optional)
+  document_url  String? // actual file URL (optional)
 
   // === Relations ===
-  mission_id String?                // optional link to mission
-  mission    Mission?               @relation(fields: [mission_id], references: [id])
+  mission_id String? // optional link to mission
+  mission    Mission? @relation(fields: [mission_id], references: [id])
 
-  user_id String?                   // optional link to user (who uploaded or owns it)
-  user     User?                    @relation(fields: [user_id], references: [id])
+  user_id String? // optional link to user (who uploaded or owns it)
+  user    User?   @relation(fields: [user_id], references: [id])
 }
 
 // ===== ENUMS =====

@@ -15,8 +15,12 @@ export class MissionDocumentsService {
       const docs = await this.prisma.missionDocuments.findMany({
         orderBy: { created_at: 'desc' },
         include: {
-          mission: true,
-          user: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 

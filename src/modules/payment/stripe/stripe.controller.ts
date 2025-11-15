@@ -20,146 +20,37 @@ export class StripeController {
     @Req() req: Request,
   ) {
     try {
-      // Stripe sends raw body in webhook requests
       const payload = req.rawBody.toString();
-
-      // Verify and parse the Stripe event
       const event = await this.stripeService.handleWebhook(payload, signature);
 
       switch (event.type) {
-        /**
-         * This event fires when a Checkout Session completes.
-         * We store the PaymentIntent ID in our payment record.
-         */
         case 'payment_intent.succeeded': {
           const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-          const missionIdFromMetadata = paymentIntent.metadata?.missionId;
-          const shipperIdFromMetadata = paymentIntent.metadata?.shipperId;
+          const missionId = paymentIntent.metadata?.missionId;
+          const shipperId = paymentIntent.metadata?.shipperId;
 
-          if (!missionIdFromMetadata || !shipperIdFromMetadata) {
-            console.error(
-              'PaymentIntent metadata missing missionId or shipperId',
-            );
+          if (!missionId || !shipperId) {
+            console.error('Missing metadata missionId / shipperId');
             return;
           }
 
-          // Find the payment record in pending state
           const payment = await this.prisma.payment.findFirst({
             where: {
-              mission_id: missionIdFromMetadata,
-              shipper_id: shipperIdFromMetadata,
+              mission_id: missionId,
+              shipper_id: shipperId,
               provider: 'STRIPE',
               status: PaymentStatus.PENDING,
             },
           });
 
           if (!payment) {
-            console.error(
-              'Payment not found for mission:',
-              missionIdFromMetadata,
-            );
-            return;
-          }
-
-          // 1️⃣ Capture the payment immediately
-          const capturedIntent = await this.stripePayment.capturePaymentIntent(
-            paymentIntent.id,
-          );
-
-          console.log(capturedIntent);
-
-          const paidAmount = (capturedIntent.amount ?? 0) / 100;
-
-          // 2️⃣ Update DB in a transaction
-          await this.prisma.$transaction(async (tx) => {
-            await tx.payment.update({
-              where: { id: payment.id },
-              data: {
-                status: PaymentStatus.COMPLETED, // mark as captured
-                provider_id: capturedIntent.id,
-                session_expires_at: null,
-                metadata: null,
-                updated_at: new Date(),
-              },
-            });
-
-            await tx.paymentTransaction.create({
-              data: {
-                user_id: payment.shipper_id,
-                store_id: null,
-                order_id: payment.mission_id,
-                type: 'mission_payment',
-                provider: 'STRIPE',
-                reference_number: capturedIntent.id,
-                status: PaymentStatus.COMPLETED,
-                raw_status: capturedIntent.status,
-                amount: payment.amount,
-                currency: payment.currency,
-                paid_amount: paidAmount,
-                paid_currency: capturedIntent.currency,
-              },
-            });
-
-            await tx.missionTimeline.create({
-              data: {
-                mission_id: payment.mission_id,
-                event: MissionStatus.PAYMENT_CONFIRMED,
-                description: 'Payment captured successfully via Stripe',
-                user_id: payment.shipper_id,
-              },
-            });
-
-            await tx.mission.update({
-              where: { id: payment.mission_id },
-              data: { status: MissionStatus.SEARCHING_CARRIER },
-            });
-          });
-
-          break;
-        }
-
-        /**
-         * Fires when a PaymentIntent successfully completes.
-         * We find the payment via metadata and mark it completed in DB.
-         */
-        case 'payment_intent.succeeded': {
-          const paymentIntent = event.data.object as Stripe.PaymentIntent;
-
-          const missionIdFromMetadata = paymentIntent.metadata?.missionId;
-          const shipperIdFromMetadata = paymentIntent.metadata?.shipperId;
-
-          if (!missionIdFromMetadata || !shipperIdFromMetadata) {
-            console.error(
-              'PaymentIntent metadata missing missionId or shipperId',
-            );
-            return;
-          }
-
-          // Find the payment record in pending state
-          const payment = await this.prisma.payment.findFirst({
-            where: {
-              mission_id: missionIdFromMetadata,
-              shipper_id: shipperIdFromMetadata,
-              provider: 'STRIPE',
-              status: PaymentStatus.PENDING,
-            },
-          });
-
-          if (!payment) {
-            console.error(
-              'Payment not found for mission:',
-              missionIdFromMetadata,
-            );
+            console.error('Payment not found for mission:', missionId);
             return;
           }
 
           const paidAmount = (paymentIntent.amount ?? 0) / 100;
 
-          /**
-           * Wrap multiple DB operations in a single transaction
-           * to ensure consistency.
-           */
           await this.prisma.$transaction(async (tx) => {
             await tx.payment.update({
               where: { id: payment.id },
@@ -172,7 +63,6 @@ export class StripeController {
               },
             });
 
-            // 2️⃣ Record the payment transaction
             await tx.paymentTransaction.create({
               data: {
                 user_id: payment.shipper_id,
@@ -190,12 +80,11 @@ export class StripeController {
               },
             });
 
-            // 3️⃣ Add mission timeline entry
             await tx.missionTimeline.create({
               data: {
                 mission_id: payment.mission_id,
                 event: MissionStatus.PAYMENT_CONFIRMED,
-                description: 'Payment held in escrow via Stripe',
+                description: 'Payment held in escrow via Stripe (auto-capture)',
                 user_id: payment.shipper_id,
               },
             });
@@ -209,9 +98,6 @@ export class StripeController {
           break;
         }
 
-        /**
-         * Handle other Stripe events simply by logging them.
-         */
         case 'payment_intent.payment_failed':
         case 'payment_intent.canceled':
         case 'payment_intent.requires_action':

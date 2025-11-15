@@ -1058,6 +1058,23 @@ export class MissionsService {
 
         // Remove temp file
         await fs.promises.unlink(tempPath);
+
+        let documentType: MissionDocumentType;
+        if (fieldname === 'pickup_photo')
+          documentType = MissionDocumentType.DEPARTURE_PHOTO;
+        if (fieldname === 'pickup_signature')
+          documentType = MissionDocumentType.DEPARTURE_SIGNATURE;
+
+        if (documentType) {
+          await tx.missionDocuments.create({
+            data: {
+              mission_id: missionId,
+              user_id: carrierId,
+              document_type: documentType,
+              document_url: uploadedFiles[fieldname],
+            },
+          });
+        }
       }
 
       const updatedMission = await tx.mission.update({
